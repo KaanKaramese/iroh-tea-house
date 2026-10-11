@@ -361,6 +361,40 @@ def bake_actions(rig, prefix, names):
         push_track(rig, name, act)
     reset_pose(rig)
 
+def capture_action(rig, action_name):
+    """Sample a hand-made action (Euler keyed) as per-frame (location, quaternion) for every bone.
+
+    Must run before reset_pose() switches the bones to quaternion rotation, otherwise the Euler
+    curves no longer drive them and the clip exports with frozen limbs.
+    """
+    act = bpy.data.actions[action_name]
+    rig.animation_data_create()
+    rig.animation_data.action = act
+    f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+    frames = []
+    for f in range(f0, f1 + 1):
+        scene.frame_set(f)
+        bpy.context.view_layer.update()
+        frames.append((f, {pb.name: (pb.location.copy(), pb.rotation_euler.to_quaternion())
+                           for pb in rig.pose.bones}))
+    rig.animation_data.action = None
+    return frames
+
+def bake_captured(rig, name, frames):
+    act = bpy.data.actions.new(name)
+    rig.animation_data.action = act
+    for f, data in frames:
+        reset_pose(rig)
+        for pb in rig.pose.bones:
+            loc, q = data[pb.name]
+            pb.location = loc
+            pb.rotation_quaternion = q
+            pb.keyframe_insert("rotation_quaternion", frame=f, group=pb.name)
+            pb.keyframe_insert("location", frame=f, group=pb.name)
+    rig.animation_data.action = None
+    reset_pose(rig)
+    return act
+
 def export(objs, filename, anim=True):
     deselect_all()
     for o in objs:
@@ -634,9 +668,12 @@ def build_aang():
     for tr in list(rig.animation_data.nla_tracks):
         rig.animation_data.nla_tracks.remove(tr)
     rig.animation_data.action = None
-    # keep the hand-authored idle/walk, generate the rest
-    push_track(rig, "Idle", bpy.data.actions["Aang_Idle"])
-    push_track(rig, "Walk", bpy.data.actions["Aang_Walk"])
+    # keep the hand-authored idle/walk (keyed with Euler rotations), generate the rest in
+    # quaternions. Capture first: switching the bones to quaternion would freeze the Euler curves.
+    idle = capture_action(rig, "Aang_Idle")
+    walk = capture_action(rig, "Aang_Walk")
+    push_track(rig, "Idle", bake_captured(rig, "Aang_Idle_Q", idle))
+    push_track(rig, "Walk", bake_captured(rig, "Aang_Walk_Q", walk))
     bake_actions(rig, "Aang", ['Eat', 'Cheer', 'Throw', 'Sad'])
     export([rig, mesh], "aang.glb")
     return rig, mesh
