@@ -78,9 +78,9 @@ export const LAYOUT = {
   beltTop: 0.45,
   seatOut: 1.15,       // how far customers stand outside the corner arc
   charScale: 1.3,      // chibi characters are scaled up for readability
-  gridCols: 6,
+  gridCols: 4,
   gridRows: 3,
-  gridSpacingX: 0.95,
+  gridSpacingX: 1.2,
   gridSpacingZ: 0.82,
   gridTopZ: 3.05,
   gridY: 0.34,

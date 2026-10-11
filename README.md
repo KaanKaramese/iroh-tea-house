@@ -18,7 +18,7 @@ To make a production build in `dist/`, run `npm run build`. To serve that build,
 ## How to play
 
 - **Customers** stand at the four table corners. A thought bubble shows each customer's order and a patience bar.
-- **Food grid:** click a dish in the front row (the one with the gold frame), or press `1`–`6`. Sokka throws the dish onto the belt where it's level with that column. The column then slides up one cell, and a new dish appears at the back.
+- **Food grid:** click a dish in the front row (the one with the gold frame), or press `1`–`4`. Sokka throws the dish onto the belt where it's level with that column. The column then slides up one cell, and a new dish appears at the back.
 - **Belt:** it runs clockwise (front → left → back → right). The first customer who wants a passing dish takes it, eats it, cheers and leaves. A new customer then walks in.
 - **Waste:** a dish that goes all the way around with no taker is discarded. You lose 20 points and your combo.
 - **Score:** each order gives base points plus a speed bonus, multiplied by your combo. The combo multiplier goes up to x3.
@@ -48,7 +48,7 @@ src/game/
   Game.js             state machine, input, scoring/combo/mood, difficulty, chef + host logic
   Character.js        rigged GLB wrapper: animation cross-fades, one-shots, waypoint walking
   CustomerManager.js  seats, spawning, orders, patience, eat → cheer → leave / angry flow
-  FoodGrid.js         6×3 grid, front-row picking, column shifting, highlights
+  FoodGrid.js         4×3 grid, front-row picking, column shifting, highlights
 src/ui/HUD.js         DOM HUD + world-anchored bubbles, speech, popups and emotes
 blender/build_assets.py   procedural asset builder (see below)
 public/models/*.glb       generated assets used by the game
