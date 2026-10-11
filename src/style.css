@@ -121,21 +121,6 @@ html, body {
 .bubble.urgent { animation: shake 0.4s ease-in-out infinite; border-color: #b8392a; }
 .bubble.leaving { opacity: 0; }
 
-.speech.left { transform: translate(-100%, -50%); margin-left: -36px; animation-name: popInL; }
-.speech.right { transform: translate(0, -50%); margin-left: 36px; animation-name: popInR; }
-.speech.above {
-  transform: translate(-50%, -100%); animation-name: popIn; font-size: 12px; text-align: center;
-  width: max-content; max-width: 78vw; white-space: normal; padding: 4px 9px;
-}
-.emote.left { margin-left: -74px; }
-.emote.right { margin-left: 74px; }
-.speech {
-  position: absolute; transform: translate(-50%, -100%);
-  background: #2b1d14; color: #fbeacb; font-size: 13px; padding: 5px 10px; border-radius: 12px;
-  white-space: nowrap; box-shadow: var(--shadow); animation: popIn 0.3s ease-out;
-  transition: opacity 0.4s;
-}
-
 .popup {
   position: absolute; transform: translate(-50%, -50%);
   font-family: var(--display); font-weight: bold; font-size: 24px; white-space: nowrap;
@@ -190,8 +175,6 @@ html, body {
 
 /* ---------- Animations ---------- */
 @keyframes popIn { from { transform: translate(-50%, -100%) scale(0.3); opacity: 0; } }
-@keyframes popInL { from { transform: translate(-100%, -50%) scale(0.3); opacity: 0; } }
-@keyframes popInR { from { transform: translate(0, -50%) scale(0.3); opacity: 0; } }
 .card { animation-name: cardIn; }
 @keyframes cardIn { from { transform: scale(0.85); opacity: 0; } }
 @keyframes floatUp {

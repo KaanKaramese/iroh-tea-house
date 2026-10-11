@@ -89,7 +89,6 @@ export class CustomerManager {
     c.char.bounce(1);
     c.ui = g.hud.createBubble(c, g.icons);
     g.hud.emote(c.char.root, '❗', 1.3, 'auto', c.ui);
-    if (Math.random() < 0.65) g.hud.speech(c.char.root, pick(c.def.hello), 2.4, 'auto', c.ui);
     g.sfx.play('bell');
   }
 
@@ -179,7 +178,6 @@ export class CustomerManager {
             c.timer = TUNING.angryTime;
             c.char.play('Sad');
             g.hud.emote(c.char.root, '💢', 1.3, 'auto', c.ui);
-            g.hud.speech(c.char.root, pick(c.def.angry), 2.2, 'auto', c.ui);
             if (c.ui) c.ui.classList.add('leaving');
             g.onCustomerAngry(c);
           }
@@ -200,7 +198,6 @@ export class CustomerManager {
               c.char.play('Cheer');
               c.char.bounce(1);
               g.hud.emote(c.char.root, '💖', 1.3, 'auto', c.ui);
-              if (Math.random() < 0.8) g.hud.speech(c.char.root, pick(c.def.happy), 2.2, 'auto', c.ui);
               g.particles.emit(c.char.root.position.clone().setY(1.5), { kind: 'heart', count: 7, color: '#ff7a9a', speed: 0.9, up: 1.8, life: 1.1, size: 0.16, gravity: -1.5 });
               if (c.ui) c.ui.classList.add('leaving');
               g.onOrderComplete(c);

@@ -15,57 +15,32 @@ export const CUSTOMERS = [
   {
     id: 'aang', name: 'Aang', file: 'aang.glb',
     likes: ['dumplings', 'noodles', 'teacake', 'cactusjuice'],
-    hello: ['Anything without meat?', 'Hi everyone!', 'Yip yip… I mean, hungry!'],
-    happy: ['That was amazing!', 'Monk-approved!'],
-    angry: ['I guess I\'ll go airbending instead…'],
   },
   {
     id: 'katara', name: 'Katara', file: 'katara.glb',
     likes: ['noodles', 'dumplings', 'teacake', 'skewers'],
-    hello: ['Smells like home!', 'Sokka, behave.'],
-    happy: ['Just like Gran-Gran makes!', 'Delicious!'],
-    angry: ['Guess I\'ll cook it myself.'],
   },
   {
     id: 'zuko', name: 'Zuko', file: 'zuko.glb',
     likes: ['skewers', 'duck', 'noodles', 'dumplings'],
-    hello: ['I must have… lunch.', 'Uncle said the food is good.'],
-    happy: ['…That was honourable food.', 'Not bad. Not bad at all.'],
-    angry: ['This is SO unfair!'],
   },
   {
     id: 'toph', name: 'Toph', file: 'toph.glb',
     likes: ['duck', 'skewers', 'dumplings', 'cactusjuice'],
-    hello: ['Feed me, Snoozles!', 'I can feel the kitchen shaking.'],
-    happy: ['Now THAT\'s a meal.', 'Rock solid!'],
-    angry: ['Slow as a badgermole nap.'],
   },
   {
     id: 'suki', name: 'Suki', file: 'suki.glb',
     likes: ['dumplings', 'teacake', 'noodles', 'duck'],
-    hello: ['A warrior needs fuel!', 'Kyoshi Island says hi.'],
-    happy: ['Perfect form!', 'Fit for a warrior!'],
-    angry: ['Too slow, chef.'],
   },
   {
     id: 'mai', name: 'Mai', file: 'mai.glb',
     likes: ['teacake', 'cactusjuice', 'dumplings', 'noodles'],
-    hello: ['Whatever. Food.', 'I\'m bored. Feed me.'],
-    happy: ['…Fine. It was good.', 'Acceptable.'],
-    angry: ['Ugh. Boring.'],
   },
 ];
 
 export const CHEF = { id: 'sokka', name: 'Sokka', file: 'sokka.glb' };
 export const HOST = {
   id: 'iroh', name: 'Iroh', file: 'iroh.glb',
-  lines: [
-    'A good meal is best shared.',
-    'Patience, nephew… I mean, Sokka.',
-    'More tea, anyone?',
-    'Every dish has its moment.',
-    'Even a burnt dumpling is a lesson.',
-  ],
 };
 
 // Layout of the central belt (world units ≈ metres, characters are ~1 m tall)
@@ -104,7 +79,8 @@ export const TUNING = {
   customersPerLevel: 6,
   startSeats: 2,           // active corners at level 1 (grows to 4)
   startDishes: 4,          // dish types unlocked at level 1 (grows to 6)
+  maxBeltItems: 14,        // dishes ride the belt until taken; cap so it can't be flooded
   needBias: 0.45,          // chance a refilled grid cell is a currently-requested dish
-  mood: { start: 100, happy: 7, angry: -24, waste: -5 },
-  score: { perDish: 100, speedBonus: 100, waste: -20, comboStep: 0.25, comboMax: 3 },
+  mood: { start: 100, happy: 7, angry: -24 },
+  score: { perDish: 100, speedBonus: 100, comboStep: 0.25, comboMax: 3 },
 };

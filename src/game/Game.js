@@ -3,7 +3,7 @@ import { CUSTOMERS, CHEF, HOST, DISHES, LAYOUT, TUNING } from '../config.js';
 import { loadAssets, renderDishIcons } from '../core/Assets.js';
 import { Sfx } from '../core/Audio.js';
 import { Particles } from '../core/Particles.js';
-import { Tweens, Ease, clamp, rand, pick, damp } from '../core/utils.js';
+import { Tweens, Ease, clamp, pick, damp } from '../core/utils.js';
 import { Stage } from '../world/Stage.js';
 import { TeaHouse } from '../world/TeaHouse.js';
 import { Conveyor } from '../world/Conveyor.js';
@@ -57,7 +57,6 @@ export class Game {
     this.host.root.position.set(2.75, 0, -3.95);
     this.host.yaw = this.host.targetYaw = Math.atan2(-2.75, 3.85);
     this.scene.add(this.host.root);
-    this.hostTalkT = rand(8, 14);
 
     const customerChars = CUSTOMERS.map((d) => new Character(assets.chars[d.id], d, LAYOUT.charScale));
     this.customers = new CustomerManager(this, customerChars);
@@ -113,7 +112,6 @@ export class Game {
     this.hud.showHint(true);
     this.hintT = 12;
     this.hud.toast('The Tea House is open!');
-    this.hud.speech(this.host.root, 'Welcome, welcome! Sit, have some tea.', 2.6);
     this.chef.bounce(1);
   }
 
@@ -161,7 +159,6 @@ export class Game {
       this.hud.toast(newDish ? `Level ${this.level}! ${newDish.name} on the menu` : `Level ${this.level}! The rush grows`, 2200);
       this.sfx.play('levelup');
       this.host.play('Cheer', { loop: false });
-      this.hud.speech(this.host.root, pick(['Splendid work, Sokka!', 'Business is booming!', 'More guests! Wonderful!']), 2.2);
     }
   }
 
@@ -251,6 +248,13 @@ export class Game {
 
   // ---------------------------------------------------------------- core loop actions
   select(c) {
+    // dishes stay on the belt until someone takes them, so cap how many can ride at once
+    if (this.conveyor.items.length + this.flying.size >= TUNING.maxBeltItems) {
+      this.grid.nope(c, 0);
+      this.sfx.play('nope');
+      this.hud.toast('The belt is full!', 900);
+      return;
+    }
     const taken = this.grid.take(c, () => this.rollDish());
     const x = this.grid.colX(c);
     this.sfx.play('throw');
@@ -297,25 +301,6 @@ export class Game {
     this.conveyor.removeItem(item);
     this.customers.deliver(c, item);
     return true;
-  }
-
-  onBeltLap(item) {
-    this.conveyor.removeItem(item);
-    const obj = item.obj;
-    const p = obj.position.clone();
-    this.tweens.add({
-      duration: 0.45,
-      update: (k) => { obj.position.y = p.y + k * 0.6; obj.scale.setScalar(BELT_DISH_SCALE * (1 - k)); obj.rotation.y += 0.3; },
-      onComplete: () => this.scene.remove(obj),
-    });
-    this.particles.emit(p.clone().setY(p.y + 0.3), { kind: 'soft', count: 8, color: '#9a8a7a', speed: 0.8, up: 0.8, life: 0.7, size: 0.3, gravity: 0 });
-    if (this.state !== 'playing') return;
-    this.score = Math.max(0, this.score + TUNING.score.waste);
-    this.hud.setScore(this.score);
-    this.hud.popup(p.clone().setY(p.y + 0.6), `Wasted ${TUNING.score.waste}`, 'bad small');
-    this.breakCombo();
-    this.addMood(TUNING.mood.waste);
-    this.sfx.play('waste');
   }
 
   onDishDelivered(c) {
@@ -400,7 +385,7 @@ export class Game {
     this.tweens.update(dt);
     this.particles.update(dt);
     this.house.update(t);
-    this.conveyor.update(dt, t, (it, ci) => this.onBeltPass(it, ci), (it) => this.onBeltLap(it));
+    this.conveyor.update(dt, t, (it, ci) => this.onBeltPass(it, ci));
 
     const wanted = new Set(playing ? this.customers.pendingDishes() : []);
     this.grid.update(dt, t, wanted);
@@ -408,13 +393,8 @@ export class Game {
     this.updateChef(dt);
     this.host.update(dt);
 
-    // Iroh small talk + steam
+    // hint timer + steam
     if (playing) {
-      this.hostTalkT -= dt;
-      if (this.hostTalkT <= 0) {
-        this.hostTalkT = rand(16, 26);
-        this.hud.speech(this.host.root, pick(HOST.lines), 2.6);
-      }
       if (this.hintT > 0) {
         this.hintT -= dt;
         if (this.hintT <= 0) this.hud.showHint(false);

@@ -204,7 +204,6 @@ export class Conveyor {
   }
 
   addItem(item) {
-    item.traveled = 0;
     this.items.push(item);
   }
 
@@ -214,7 +213,7 @@ export class Conveyor {
   }
 
   /** Advances belt and items. `onPass(item, cornerIndex)` returns true when the corner takes the item. */
-  update(dt, t, onPass, onLap) {
+  update(dt, t, onPass) {
     const ds = this.speed * dt;
     this.offset = this.path.wrap(this.offset + ds);
     this.updateSlats();
@@ -223,7 +222,6 @@ export class Conveyor {
     for (const it of this.items.slice()) {
       const prev = it.s;
       it.s = this.path.wrap(it.s + ds);
-      it.traveled += ds;
       this.path.point(it.s, it.obj.position);
       it.obj.position.y = this.beltTop + 0.015;
       it.obj.rotation.y += dt * 0.6;
@@ -234,7 +232,6 @@ export class Conveyor {
         const crossed = prev <= it.s ? (prev < cs && cs <= it.s) : (cs > prev || cs <= it.s);
         if (crossed && onPass(it, ci)) taken = true;
       }
-      if (!taken && it.traveled >= this.path.length - 0.05) onLap(it);
     }
   }
 
