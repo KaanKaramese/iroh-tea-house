@@ -82,6 +82,7 @@ export class Sfx {
     if (!this.ctx || this.muted) return;
     switch (name) {
       case 'click': this.tone(880, 0.06, { type: 'square', vol: 0.05 }); break;
+      case 'tile': this.tone(520, 0.05, { type: 'triangle', vol: 0.07, slideTo: 330 }); this.noise(0.04, { vol: 0.05, freq: 1800 }); break;
       case 'hover': this.tone(1320, 0.03, { type: 'sine', vol: 0.03 }); break;
       case 'nope': this.tone(150, 0.14, { type: 'square', vol: 0.06, slideTo: 110 }); break;
       case 'throw':

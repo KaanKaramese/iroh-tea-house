@@ -100,7 +100,7 @@ export const rugTexture = () => canvasTexture(1024, 680, (g, w, h) => {
   g.globalAlpha = 1;
 });
 
-export const paiShoTexture = () => canvasTexture(512, 320, (g, w, h) => {
+const paiShoDraw = (g, w, h) => {
   g.fillStyle = '#c99a5e';
   g.fillRect(0, 0, w, h);
   grain(g, 0, 0, w, h, '#6b4422', 60, 0.12);
@@ -132,6 +132,29 @@ export const paiShoTexture = () => canvasTexture(512, 320, (g, w, h) => {
   g.beginPath();
   g.arc(cx, cy, R, 0, Math.PI * 2);
   g.stroke();
+};
+
+export const paiShoTexture = () => canvasTexture(512, 320, paiShoDraw);
+export const paiShoBoardTexture = () => canvasTexture(512, 512, paiShoDraw);
+
+/** Face of a Pai Sho tile: a six-petal flower in `color` on cream. */
+export const tileTexture = (color) => canvasTexture(64, 64, (g, w, h) => {
+  g.fillStyle = '#f3ead2';
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = color;
+  for (let i = 0; i < 6; i++) {
+    g.save();
+    g.translate(w / 2, h / 2);
+    g.rotate((i / 6) * Math.PI * 2);
+    g.beginPath();
+    g.ellipse(0, -15, 7, 14, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  }
+  g.fillStyle = '#f3ead2';
+  g.beginPath();
+  g.arc(w / 2, h / 2, 5, 0, Math.PI * 2);
+  g.fill();
 });
 
 export const bannerTexture = (glyph = '茶', sub = '') => canvasTexture(256, 384, (g, w, h) => {

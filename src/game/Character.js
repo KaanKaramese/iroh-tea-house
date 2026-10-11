@@ -35,10 +35,11 @@ export class Character {
     this.headY = 1.05 * scale;
     this.squash = 0;
     this._base = scale;
+    this.idleName = 'Idle'; // what it returns to after one-shots and walks
     this.play('Idle');
   }
 
-  play(name, { fade = 0.2, loop = true, timeScale = 1, then = 'Idle' } = {}) {
+  play(name, { fade = 0.2, loop = true, timeScale = 1, then = null } = {}) {
     const a = this.actions[name];
     if (!a) return;
     if (this.current === a && loop && a.isRunning()) { a.timeScale = timeScale; return; }
@@ -55,7 +56,7 @@ export class Character {
     if (loop) { this.onceLeft = 0; this.afterOnce = null; }
     else {
       this.onceLeft = a.getClip().duration / timeScale - fade * 0.5;
-      this.afterOnce = then;
+      this.afterOnce = then ?? this.idleName;
     }
   }
 
@@ -87,7 +88,7 @@ export class Character {
         if (!this.path.length) {
           const cb = this.onArrive;
           this.onArrive = null;
-          this.play('Idle');
+          this.play(this.idleName);
           cb?.();
         }
       } else {

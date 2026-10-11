@@ -39,6 +39,14 @@ export const CUSTOMERS = [
 ];
 
 export const CHEF = { id: 'sokka', name: 'Sokka', file: 'sokka.glb' };
+// Earth Kingdom locals who play Pai Sho against Iroh (one at random per run)
+export const OPPONENTS = [
+  { id: 'ek_elder', name: 'Old Pai Sho master', file: 'ek_elder.glb' },
+  { id: 'ek_lady', name: 'Ba Sing Se lady', file: 'ek_lady.glb' },
+  { id: 'ek_agent', name: 'Dai Li agent', file: 'ek_agent.glb' },
+  { id: 'ek_merchant', name: 'Merchant', file: 'ek_merchant.glb' },
+];
+
 export const HOST = {
   id: 'iroh', name: 'Iroh', file: 'iroh.glb',
 };
@@ -61,6 +69,10 @@ export const LAYOUT = {
   gridY: 0.34,
   chefZ: 2.45,
   door: [-5.3, -4.1],
+  // Back wall, centred between the moon windows so it is inside the camera frame on phones and PCs.
+  // Iroh (west) and his opponent (east) sit facing each other along the west-east axis.
+  // (Their arms are short: they lean in over the table edge, which stays just clear of their bellies)
+  paiSho: { x: 0, z: -3.81, tableTop: 0.3, size: 0.56, irohX: -0.5, irohZ: -3.81, opponentX: 0.52, opponentZ: -3.81, cushionTop: 0.144 },
 };
 
 export const TUNING = {

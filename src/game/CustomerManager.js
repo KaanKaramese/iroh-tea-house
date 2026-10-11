@@ -16,7 +16,7 @@ export class CustomerManager {
     const path = game.conveyor.path;
     const [doorX, doorZ] = LAYOUT.door;
     const door = V(doorX, doorZ);
-    const backLane = -(LAYOUT.beltHalfD + 1.55);
+    const backLane = -(LAYOUT.beltHalfD + 1.45); // kept clear of the Pai Sho table against the back wall
     const sideLane = LAYOUT.beltHalfW + 1.7;
     // walking routes from the door to each corner (front-left, back-left, back-right, front-right)
     const routes = [

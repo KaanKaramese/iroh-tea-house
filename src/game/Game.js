@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CUSTOMERS, CHEF, HOST, DISHES, LAYOUT, TUNING } from '../config.js';
+import { CUSTOMERS, CHEF, HOST, OPPONENTS, DISHES, LAYOUT, TUNING } from '../config.js';
 import { loadAssets, renderDishIcons } from '../core/Assets.js';
 import { Sfx } from '../core/Audio.js';
 import { Particles } from '../core/Particles.js';
@@ -11,6 +11,7 @@ import { paiShoTexture } from '../world/textures.js';
 import { Character } from './Character.js';
 import { FoodGrid } from './FoodGrid.js';
 import { CustomerManager } from './CustomerManager.js';
+import { PaiSho } from './PaiSho.js';
 import { HUD } from '../ui/HUD.js';
 
 const $ = (id) => document.getElementById(id);
@@ -56,9 +57,11 @@ export class Game {
 
     // Iroh the host
     this.host = new Character(assets.chars[HOST.id], HOST, LAYOUT.charScale);
-    this.host.root.position.set(2.75, 0, -3.95);
-    this.host.yaw = this.host.targetYaw = Math.atan2(-2.75, 3.85);
     this.scene.add(this.host.root);
+    // Earth Kingdom locals who take turns sitting across from Iroh; one is on the board at a time
+    const opponents = OPPONENTS.map((d) => new Character(assets.chars[d.id], d, LAYOUT.charScale));
+    this.paiSho = new PaiSho(this, opponents); // seats Iroh and a random opponent at the Pai Sho table
+    this.runs = 0;
 
     const customerChars = CUSTOMERS.map((d) => new Character(assets.chars[d.id], d, LAYOUT.charScale));
     this.customers = new CustomerManager(this, customerChars);
@@ -96,7 +99,7 @@ export class Game {
     this.chef.root.position.set(0, 0, LAYOUT.chefZ);
     this.chefTargetX = 0;
     this.chef.play('Idle');
-    this.host.play('Idle');
+    this.host.play(this.host.idleName);
     this.hud.setScore(0, true);
     this.hud.setCombo(0, 1);
     this.hud.setMood(1);
@@ -108,6 +111,7 @@ export class Game {
     this.sfx.unlock();
     this.sfx.play('start');
     this.sfx.startMusic();
+    if (this.runs++ > 0) this.paiSho.rollOpponent(); // a new opponent for every run after the first
     this.resetRun();
     this.state = 'playing';
     ['screen-title', 'screen-over', 'screen-pause'].forEach((id) => $(id).classList.add('hidden'));
@@ -131,7 +135,7 @@ export class Game {
     this.sfx.stopMusic();
     this.sfx.play('gameover');
     this.chef.play('Sad');
-    this.host.play('Sad');
+    this.hud.emote(this.host.root, '😢', 1.2);
     for (const c of this.customers.customers) {
       if (c.state === 'waiting' || c.state === 'eating') { c.state = 'angry'; c.timer = 99; c.char.play('Sad'); }
     }
@@ -161,7 +165,8 @@ export class Game {
       const newDish = TUNING.startDishes + lv <= DISHES.length ? DISHES[TUNING.startDishes + lv - 1] : null;
       this.hud.toast(newDish ? `Level ${this.level}! ${newDish.name} on the menu` : `Level ${this.level}! The rush grows`, 2200);
       this.sfx.play('levelup');
-      this.host.play('Cheer', { loop: false });
+      this.host.bounce(1);
+      this.hud.emote(this.host.root, '👏', 1.2);
     }
   }
 
@@ -371,7 +376,8 @@ export class Game {
     if (this.combo > 0 && this.combo % 5 === 0) {
       this.hud.toast(`${this.combo} in a row! Sokka is on fire!`);
       this.chef.play('Cheer', { loop: false, timeScale: 1.2 });
-      this.host.play('Cheer', { loop: false });
+      this.host.bounce(1);
+      this.hud.emote(this.host.root, '🎉', 1.2);
       this.particles.emit(this.chef.root.position.clone().setY(1.3), { kind: 'star', count: 14, color: '#ffd76a', speed: 1.6, up: 2.5, life: 0.9 });
     }
     if (this.served % TUNING.customersPerLevel === 0) {
@@ -436,6 +442,7 @@ export class Game {
     this.customers.update(dt, playing);
     this.updateChef(dt);
     this.host.update(dt);
+    this.paiSho.update(dt);
 
     // hint timer + steam
     if (playing) {

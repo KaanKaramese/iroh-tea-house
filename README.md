@@ -50,6 +50,7 @@ src/game/
   Character.js        rigged GLB wrapper: animation cross-fades, one-shots, waypoint walking
   CustomerManager.js  seats, spawning, orders, patience, eat → cheer → leave / angry flow
   FoodGrid.js         4×3 grid, front-row picking, column shifting, highlights
+  PaiSho.js           Iroh's Pai Sho nook: low table, two players, tiles that follow their hands in sync with the seated clips
 src/ui/HUD.js         DOM HUD + world-anchored bubbles, popups and emotes
 blender/build_assets.py   procedural asset builder (see below)
 public/models/*.glb       generated assets used by the game
@@ -63,7 +64,7 @@ public/models/*.glb       generated assets used by the game
 blender -b Aang_GameReady/Aang_GameReady.blend --python blender/build_assets.py -- public/models
 ```
 
-(`npm run assets` runs the same command if `blender` is on your PATH. On Windows the usual path is `"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"`.) Add a second folder path after `public/models` to also render preview PNGs of every asset.
+(`npm run assets` runs the same command if `blender` is on your PATH. On Windows the usual path is `"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"`.) Add a second folder path after `public/models` to also render preview PNGs of every asset. To rebuild only some files, add `only=iroh` (or `only=dishes,props`, etc.) as a last argument, and the other files are left untouched.
 
 What the script does:
 
@@ -73,9 +74,10 @@ What the script does:
   - Zuko gets shaggy hair and his scar.
   - Toph gets her headband, pom-poms and bare feet.
   - Iroh gets his beard, topknot and belly.
+  - Four Earth Kingdom locals who play Pai Sho against Iroh: an old master with spectacles and a white moustache, a Ba Sing Se lady with a bun and gold hairpin, a Dai Li agent in his flared hat, and a merchant with a big moustache.
   - Suki gets Kyoshi face paint and a gold headdress.
   - Mai gets her buns and bangs.
-- **Rig and animations:** each character is rigidly skinned to a copy of Aang's 13-bone rig. The script generates `Idle`, `Walk`, `Eat`, `Cheer`, `Throw` and `Sad` clips. Aang keeps his hand-authored Idle and Walk.
+- **Rig and animations:** each character is rigidly skinned to a copy of Aang's 13-bone rig. The script generates `Idle`, `Walk`, `Eat`, `Cheer`, `Throw` and `Sad` clips. Aang keeps his hand-authored Idle and Walk. Iroh also gets a seated `PaiSho` loop (9 s: three moves, one with a beard stroke), and the Earth Kingdom opponents get a `PaiShoOpp` variant of it with the head counter-rotated so their faces stay visible while they lean over the board.
 - **Dishes and props:** builds the 6 dishes (`dishes.glb`) and 6 props (`props.glb`): lantern, plant, teapot, cup, barrel and cushion.
 - **Safety:** the source `.blend` is opened read-only and is never saved.
 

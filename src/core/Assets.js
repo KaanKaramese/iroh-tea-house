@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CUSTOMERS, CHEF, HOST, DISHES } from '../config.js';
+import { CUSTOMERS, CHEF, HOST, OPPONENTS, DISHES } from '../config.js';
 
 const BASE = `${import.meta.env.BASE_URL}models/`;
 
 /** Loads every GLB produced by blender/build_assets.py. */
 export async function loadAssets(onProgress = () => {}) {
   const loader = new GLTFLoader();
-  const charDefs = [CHEF, HOST, ...CUSTOMERS];
+  const charDefs = [CHEF, HOST, ...CUSTOMERS, ...OPPONENTS];
   const jobs = [
     ...charDefs.map((d) => ({ key: `char:${d.id}`, file: d.file })),
     { key: 'dishes', file: 'dishes.glb' },

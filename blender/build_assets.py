@@ -14,9 +14,15 @@ The source .blend is never saved; everything happens in memory.
 import bpy, bmesh, math, os, sys
 from mathutils import Vector, Matrix, Quaternion, Euler
 
-ARGV = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+_ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+# optional `only=iroh,dishes` argument: rebuild just those files and leave the others untouched
+ONLY = {n.strip().lower() for a in _ARGS if a.startswith("only=") for n in a[5:].split(",")}
+ARGV = [a for a in _ARGS if not a.startswith("only=")]
 OUT = os.path.abspath(ARGV[0] if ARGV else "public/models")
 PREVIEW = os.path.abspath(ARGV[1]) if len(ARGV) > 1 else None
+
+def wanted(name):
+    return not ONLY or name.lower() in ONLY
 os.makedirs(OUT, exist_ok=True)
 
 scene = bpy.context.scene
@@ -315,8 +321,51 @@ def a_sad(f, N):
              'hand.L': [('Y', 10)], 'hand.R': [('Y', -10)]},
             {'root': (0, 0, -0.012)})
 
+def a_paisho(f, N, head_comp=1.2):
+    """Iroh sits on a cushion and plays Pai Sho: a 9 s loop of three 3 s moves. Each move reaches to
+    the tile pile (u~0.6 s), carries a tile to a different spot (u~1.4 s), puts it down and sits back
+    to think. The second move ends with a stroke of the beard."""
+    t = f / 30.0
+    beat = min(2, int(t // 3))
+    u = t - beat * 3
+    # right arm: (shoulder lift X, swing Z) at the pile, then at this move's target
+    # inward swing (+Z for the right arm) because the arm's rest direction points outward
+    pile = (-96.0, 24.0)
+    tgt = [(-102.0, 14.0), (-106.0, 32.0), (-100.0, 48.0)][beat]
+    rest = -100.0  # hand hovering at the table rim (never swings down through the table edge)
+    ax = _keys(u, [(0, rest), (0.55, pile[0]), (0.85, pile[0]), (1.35, tgt[0]), (1.7, tgt[0]), (2.3, rest), (3, rest)])
+    az = _keys(u, [(0, 28), (0.55, pile[1]), (0.85, pile[1]), (1.35, tgt[1]), (1.7, tgt[1]), (2.3, 28), (3, 28)])
+    wrist = _keys(u, [(0, -18), (0.55, -26), (0.85, -26), (1.35, -14), (1.7, -26), (2.3, -18), (3, -18)])
+    lean = _keys(u, [(0, 0), (0.55, 32), (0.85, 32), (1.35, 36), (1.7, 36), (2.3, 6), (3, 0)])
+    look = _keys(u, [(0, 0), (0.4, 8), (1.7, 8), (2.4, 4), (3, 0)])
+    # the beard stroke belongs to the second move only
+    b = _keys(u, [(0, 0), (1.9, 0), (2.25, 1), (2.9, 1), (3, 0)]) if beat == 1 else 0.0
+    stroke = math.sin((u - 2.25) * 11) * 9 * b
+    breath = math.sin(2 * math.pi * t / 3.0)
+    rots = {
+        'spine': [('X', 2 + lean + breath * 1.0)],
+        # the head counter-rotates against the forward lean so faces stay visible to the camera
+        # (1.65 = fully level; Iroh keeps a slight bow toward the board)
+        'head': [('X', 5 + look - head_comp * lean), ('Z', -3 * b + 2 * math.sin(2 * math.pi * t / 4.5))],
+        # cross-legged: knees out to the sides so the legs never reach under the table
+        'thigh.L': [('X', -64), ('Z', 62)], 'thigh.R': [('X', -64), ('Z', -62)],
+        'foot.L': [('X', 30)], 'foot.R': [('X', 30)],
+        'upperarm.R': [('X', ax), ('Z', az)],
+        'hand.R': [('X', wrist)],
+        # left hand rests at the table rim like the right one, and lifts to the beard for the stroke
+        'upperarm.L': [('X', -106 - 12 * b + stroke), ('Z', -28 - 4 * b), ('Y', -6 * (1 - b))],
+        'hand.L': [('X', -18 - 17 * b)],
+    }
+    return rots, {'hips': (0, 0, -0.16 + 0.004 * breath)}
+
+def a_paisho_opp(f, N):
+    return a_paisho(f, N, head_comp=1.65)
+
+# (function, last frame, key every n frames)
 ANIMS = {'Idle': (a_idle, 60), 'Walk': (a_walk, 24), 'Eat': (a_eat, 36),
-         'Cheer': (a_cheer, 30), 'Throw': (a_throw, 18), 'Sad': (a_sad, 40)}
+         'Cheer': (a_cheer, 30), 'Throw': (a_throw, 18), 'Sad': (a_sad, 40),
+         'PaiSho': (a_paisho, 270, 3), 'PaiShoOpp': (a_paisho_opp, 270, 3)}
+BASE_ANIMS = ['Idle', 'Walk', 'Eat', 'Cheer', 'Throw', 'Sad']
 
 def reset_pose(rig):
     for pb in rig.pose.bones:
@@ -348,10 +397,10 @@ def push_track(rig, name, act):
 def bake_actions(rig, prefix, names):
     rig.animation_data_create()
     for name in names:
-        fn, N = ANIMS[name]
+        fn, N, *step = ANIMS[name]
         act = bpy.data.actions.new("%s_%s" % (prefix, name))
         rig.animation_data.action = act
-        for f in range(N + 1):
+        for f in range(0, N + 1, step[0] if step else 1):
             rots, locs = fn(f, N)
             pose(rig, rots, locs)
             for pb in rig.pose.bones:
@@ -470,14 +519,14 @@ def skirt(P, mat, bottom_z, top_z=0.345, r_bot=0.215, r_top=0.172, hem=None, ysq
                          scale=(1, ysq, 1), seg=36, rseg=8))
     return out
 
-def finalize(P, parts, rig_name=None, extra_actions=None):
+def finalize(P, parts, extra_anims=(), base=None):
     objs = list(parts.values()) if isinstance(parts, dict) else parts
     mesh = join(objs, P)
     rig = new_rig(P)
     mesh.parent = rig
     mod = mesh.modifiers.new("Armature", 'ARMATURE')
     mod.object = rig
-    bake_actions(rig, P, list(ANIMS.keys()))
+    bake_actions(rig, P, (BASE_ANIMS if base is None else list(base)) + list(extra_anims))
     export([rig, mesh], P.lower() + ".glb")
     return rig, mesh
 
@@ -608,7 +657,7 @@ def build_iroh():
         sphere(P + "_StacheR", ml + mn * 0.012 + Vector((-0.045, 0, 0.0)), (0.06, 0.028, 0.026), M('#CFCFC9', 0.95), rot=(0, -18, 0)),
         decal(P + "_Nose", head, (0.0, -0.2, 0.655), (0.03, 0.025), M('#D09A6A', 0.6), thick=0.02),
     ] + skirt(P, M('#6C281C'), 0.1, hem=gold, r_bot=0.23, r_top=0.19)
-    return finalize(P, list(b.values()) + extra)
+    return finalize(P, list(b.values()) + extra, extra_anims=['PaiSho'])
 
 def build_suki():
     P = "Suki"
@@ -833,18 +882,119 @@ def prop_cushion():
          sphere(P + "_Button", (0, 0, 0.092), (0.025, 0.025, 0.012), M('#D4A53A', 0.4, metal=0.3))]
     return join(o, P, skinned=False)
 
+
+# --------------------------------------------------------------------------
+# Earth Kingdom locals: Iroh's Pai Sho opponents (only Idle + the seated PaiSho loop are baked)
+# --------------------------------------------------------------------------
+OPPONENT_ANIMS = dict(extra_anims=['PaiShoOpp'], base=['Idle'])
+
+def build_ek_elder():
+    """A veteran Pai Sho master from the Upper Ring: thin white moustache, round spectacles."""
+    P = "EK_Elder"
+    c = dict(skin='#E3B98C', shirt='#4F7A47', sleeve='#4F7A47', cuff='#C9A13A', pants='#6B5A3A',
+             belt='#8A6A2E', collar='#C9A13A', boot='#3A2A1E', brow='#EDEDE8')
+    b = body(P, c)
+    tweak(b["BrowL"], scale=(1.1, 1.2, 1.7), rot=(0, 8, 0))
+    tweak(b["BrowR"], scale=(1.1, 1.2, 1.7), rot=(0, -8, 0))
+    white = M('#E8E8E2', 0.9)
+    gold = M('#C99A3A', 0.4, metal=0.5)
+    extra = [
+        cap(P + "_SideHair", white, [((0, 0, 0.8), (0, 0, -1)), ((0, 0, 0.6), (0, 0, 1)), ((0, -0.03, 0), (0, 1, 0))],
+            scale=1.07, thick=0.03),
+        sphere(P + "_Bun", (0, 0.2, 0.74), (0.06, 0.05, 0.06), white),
+        cone_along(P + "_StacheL", (0.03, -0.2, 0.625), (0.45, -0.1, -1), 0.2, 0.03, white),
+        cone_along(P + "_StacheR", (-0.03, -0.2, 0.625), (-0.45, -0.1, -1), 0.2, 0.03, white),
+        cone_along(P + "_Goatee", (0, -0.17, 0.56), (0, -0.15, -1), 0.14, 0.035, white),
+        torus(P + "_GlassL", (0.1, -0.205, 0.69), 0.05, 0.006, gold, rot=(90, 0, 0)),
+        torus(P + "_GlassR", (-0.1, -0.205, 0.69), 0.05, 0.006, gold, rot=(90, 0, 0)),
+        rbox(P + "_GlassBridge", (0, -0.207, 0.7), (0.05, 0.008, 0.008), gold, "head", bev=0.002, segs=1),
+    ] + skirt(P, M('#4F7A47'), 0.1, hem=gold, r_bot=0.22, r_top=0.18)
+    return finalize(P, list(b.values()) + extra, **OPPONENT_ANIMS)
+
+def build_ek_lady():
+    """A Ba Sing Se lady: green dress, high bun with a gold hairpin and a flower."""
+    P = "EK_Lady"
+    c = dict(skin='#F2D2B0', shirt='#5C8A52', sleeve='#A9CC96', cuff='#C9A13A', pants='#3F6A3B',
+             belt='#C9A13A', collar='#C9A13A', boot='#2F2A22', brow='#2B1A14')
+    b = body(P, c, ears=False)
+    hair = M('#2B1A14', 0.8)
+    gold = M('#D4A53A', 0.35, metal=0.55)
+    head = b["Head"]
+    extra = [
+        cap(P + "_Hair", hair, [hairline(0.82, 0.56)], scale=1.075, thick=0.02),
+        sphere(P + "_HairBack", (0, 0.15, 0.66), (0.2, 0.11, 0.19), hair),
+        sphere(P + "_Bun", (0, 0.03, 1.04), (0.09, 0.09, 0.075), hair),
+        cone_along(P + "_Pin", (0.06, 0.03, 1.06), (1, 0, 0.5), 0.13, 0.012, gold),
+        sphere(P + "_Flower", (-0.06, -0.02, 1.1), (0.035, 0.035, 0.025), M('#E8786A', 0.5)),
+        decal(P + "_BlushL", head, (0.13, -0.2, 0.64), (0.04, 0.025), M('#EE9A90', 0.7), thick=0.004),
+        decal(P + "_BlushR", head, (-0.13, -0.2, 0.64), (0.04, 0.025), M('#EE9A90', 0.7), thick=0.004),
+    ] + skirt(P, M('#5C8A52'), 0.12, hem=gold, r_bot=0.22, r_top=0.18)
+    return finalize(P, list(b.values()) + extra, **OPPONENT_ANIMS)
+
+def build_ek_agent():
+    """A Dai Li agent: stern brows, dark green uniform, flared hat."""
+    P = "EK_Agent"
+    c = dict(skin='#D9A87C', shirt='#3E5A3A', sleeve='#3E5A3A', cuff='#7A6A3A', pants='#2D3F2B',
+             belt='#7A6A3A', collar='#2D3F2B', boot='#1E1A14', brow='#1B1510')
+    b = body(P, c, ears=False)
+    tweak(b["BrowL"], rot=(0, -14, 0), offset=(0, 0, -0.004))
+    tweak(b["BrowR"], rot=(0, 14, 0), offset=(0, 0, -0.004))
+    hat = M('#35502F', 0.7)
+    gold = M('#C9A13A', 0.4, metal=0.4)
+    extra = [
+        cap(P + "_Hair", M('#1B1510', 0.8), [hairline(0.9, 0.6)], scale=1.07, thick=0.02),
+        cyl(P + "_Hat", (0, 0.0, 1.01), 0.29, 0.11, 0.11, hat, "head", seg=32, bevel=0.01),
+        torus(P + "_HatBand", (0, 0.0, 0.958), 0.27, 0.014, gold, seg=40),
+        sphere(P + "_HatTop", (0, 0.0, 1.07), (0.06, 0.06, 0.028), hat),
+        rbox(P + "_Sash", (0, -0.118, 0.34), (0.3, 0.02, 0.07), M('#7A6A3A', 0.6), "spine", rot=(0, 0, 0), bev=0.008),
+    ]
+    return finalize(P, list(b.values()) + extra, **OPPONENT_ANIMS)
+
+def build_ek_merchant():
+    """A cheerful Earth Kingdom merchant: round belly, big moustache and chin tuft."""
+    P = "EK_Merchant"
+    c = dict(skin='#D6A072', shirt='#8A6A2E', sleeve='#8A6A2E', cuff='#4F7A47', pants='#4F7A47',
+             belt='#4F7A47', collar='#C9A13A', boot='#3A2616', brow='#3A2616')
+    b = body(P, c)
+    tweak(b["Shirt"], scale=(1.2, 1.32, 1.0))
+    tweak(b["Belt"], scale=(1.18, 1.3, 1.0))
+    tweak(b["Collar"], scale=(1.1, 1.15, 1.0))
+    hair = M('#3A2616', 0.85)
+    head = b["Head"]
+    ml, mn = surf(head, (0.0, -0.22, 0.615))
+    extra = [
+        cap(P + "_Hair", hair, [hairline(0.88, 0.6)], scale=1.075, thick=0.022),
+        sphere(P + "_Knot", (0, 0.04, 1.02), (0.06, 0.055, 0.05), hair),
+        sphere(P + "_StacheL", ml + mn * 0.012 + Vector((0.055, 0, 0.0)), (0.075, 0.03, 0.03), hair, rot=(0, 20, 0)),
+        sphere(P + "_StacheR", ml + mn * 0.012 + Vector((-0.055, 0, 0.0)), (0.075, 0.03, 0.03), hair, rot=(0, -20, 0)),
+        sphere(P + "_Tuft", (0, -0.185, 0.54), (0.04, 0.04, 0.055), hair),
+        decal(P + "_Nose", head, (0.0, -0.2, 0.655), (0.03, 0.025), M('#C48C5E', 0.6), thick=0.02),
+    ] + skirt(P, M('#4F7A47'), 0.14, hem=M('#C9A13A', 0.4, metal=0.4), r_bot=0.225, r_top=0.19)
+    return finalize(P, list(b.values()) + extra, **OPPONENT_ANIMS)
+
 # --------------------------------------------------------------------------
 # Build everything
 # --------------------------------------------------------------------------
-chars = [("Aang",) + build_aang()]
-for fn in (build_sokka, build_katara, build_zuko, build_toph, build_iroh, build_suki, build_mai):
-    rig, mesh = fn()
-    chars.append((mesh.name, rig, mesh))
+chars = [("Aang",) + build_aang()] if wanted("aang") else []
+for name, fn in (("sokka", build_sokka), ("katara", build_katara), ("zuko", build_zuko), ("toph", build_toph),
+                 ("iroh", build_iroh), ("suki", build_suki), ("mai", build_mai)):
+    if wanted(name):
+        rig, mesh = fn()
+        chars.append((mesh.name, rig, mesh))
 
-dishes = [dish_skewers(), dish_dumplings(), dish_noodles(), dish_duck(), dish_teacake(), dish_cactusjuice()]
-export(dishes, "dishes.glb", anim=False)
-props = [prop_lantern(), prop_plant(), prop_teapot(), prop_cup(), prop_barrel(), prop_cushion()]
-export(props, "props.glb", anim=False)
+for name, fn in (("ek_elder", build_ek_elder), ("ek_lady", build_ek_lady),
+                 ("ek_agent", build_ek_agent), ("ek_merchant", build_ek_merchant)):
+    if wanted(name):
+        rig, mesh = fn()
+        chars.append((mesh.name, rig, mesh))
+
+dishes, props = [], []
+if wanted("dishes"):
+    dishes = [dish_skewers(), dish_dumplings(), dish_noodles(), dish_duck(), dish_teacake(), dish_cactusjuice()]
+    export(dishes, "dishes.glb", anim=False)
+if wanted("props"):
+    props = [prop_lantern(), prop_plant(), prop_teapot(), prop_cup(), prop_barrel(), prop_cushion()]
+    export(props, "props.glb", anim=False)
 
 # --------------------------------------------------------------------------
 # Optional preview renders (for checking the look)
@@ -862,7 +1012,7 @@ if PREVIEW:
         rig.animation_data.action = None
         for tr in rig.animation_data.nla_tracks:
             tr.mute = True
-        rig.location = ((i - 3.5) * 0.62, 0, 0)
+        rig.location = ((i - (len(chars) - 1) / 2) * 0.62, 0, 0)
     for i, d in enumerate(dishes):
         d.location = ((i - 2.5) * 0.42, -1.2, 0)
     for i, p in enumerate(props):
@@ -909,3 +1059,16 @@ if PREVIEW:
     shot(os.path.join(PREVIEW, "dishes.png"), (0, -2.9, 1.3), (0, -1.2, 0.05), 50, (1600, 600))
     shot(os.path.join(PREVIEW, "props.png"), (0, -0.6, 1.4), (0, 1.2, 0.25), 45, (1600, 600))
 print("BUILD_DONE")
+
+# Pose previews of Iroh's seated Pai Sho loop (only when rebuilding just Iroh with a preview folder)
+if PREVIEW and ONLY == {"iroh"} and chars:
+    iroh_rig = chars[0][1]
+    iroh_rig.location = (0, 0, 0)
+    for tr in iroh_rig.animation_data.nla_tracks:
+        tr.mute = True
+    iroh_rig.animation_data.action = bpy.data.actions["Iroh_PaiSho"]
+    for t in (0.0, 0.7, 1.4, 2.4, 3.9, 5.5):
+        scene.frame_set(1 + round(t * 30))
+        shot(os.path.join(PREVIEW, "iroh_paisho_front_%.1f.png" % t), (1.1, -2.3, 0.95), (0, 0, 0.42), 50, (700, 700))
+    scene.frame_set(1 + round(1.4 * 30))
+    shot(os.path.join(PREVIEW, "iroh_paisho_side.png"), (2.4, -0.2, 0.5), (0, 0, 0.4), 50, (700, 700))
