@@ -123,6 +123,10 @@ html, body {
 
 .speech.left { transform: translate(-100%, -50%); margin-left: -36px; animation-name: popInL; }
 .speech.right { transform: translate(0, -50%); margin-left: 36px; animation-name: popInR; }
+.speech.above {
+  transform: translate(-50%, -100%); animation-name: popIn; font-size: 12px; text-align: center;
+  width: max-content; max-width: 78vw; white-space: normal; padding: 4px 9px;
+}
 .emote.left { margin-left: -74px; }
 .emote.right { margin-left: 74px; }
 .speech {

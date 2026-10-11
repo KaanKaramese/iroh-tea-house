@@ -119,23 +119,35 @@ export class HUD {
    * side 'auto' | 'left' | 'right': the line sits beside the head, level with the face.
    * Without a side it floats above the head (used for Iroh, who has no order bubble).
    */
-  speech(obj, text, seconds = 2, side = null) {
+  /** Phones are too narrow to place text beside a character without covering a face. */
+  narrow() { return window.innerWidth < 700; }
+
+  /**
+   * side 'auto' | 'left' | 'right' places the line beside the head, level with the face.
+   * On narrow screens, if the customer's order bubble (`bubble`) is given, the line sits
+   * above that bubble instead. Without a side it floats above the head (used for Iroh).
+   */
+  speech(obj, text, seconds = 2, side = null, bubble = null) {
     if (side === 'auto') side = this.sideOf(obj);
+    const above = !!(side && bubble && this.narrow());
     const s = document.createElement('div');
-    s.className = side ? `speech ${side}` : 'speech';
+    s.className = above ? 'speech above' : side ? `speech ${side}` : 'speech';
     s.textContent = text;
-    const rec = this._anchor(obj, side ? 0.78 : 2.05, s, seconds);
+    const rec = this._anchor(obj, above ? 1.62 : side ? 0.78 : 2.05, s, seconds);
     rec.fade = s;
     rec.clamp = side;
+    if (above) { rec.link = bubble; rec.mode = 'above'; }
     return rec;
   }
 
-  emote(obj, emoji, height = 1.7, side = null) {
+  emote(obj, emoji, height = 1.7, side = null, bubble = null) {
     if (side === 'auto') side = this.sideOf(obj);
+    const beside = !!(side && bubble && this.narrow());
     const e = document.createElement('div');
-    e.className = side ? `emote ${side}` : 'emote';
+    e.className = beside ? 'emote' : side ? `emote ${side}` : 'emote';
     e.textContent = emoji;
-    this._anchor(obj, side ? Math.min(height, 1.3) : height, e, 1.4);
+    const rec = this._anchor(obj, beside ? 1.62 : side ? Math.min(height, 1.3) : height, e, 1.4);
+    if (beside) { rec.link = bubble; rec.mode = 'beside'; rec.side = side; }
   }
 
   popup(worldPos, text, cls = '') {
@@ -157,7 +169,24 @@ export class HUD {
     const x = (this.v.x * 0.5 + 0.5) * window.innerWidth;
     const y = (-this.v.y * 0.5 + 0.5) * window.innerHeight;
     let px = x;
-    if (rec.clamp) {
+    const W = window.innerWidth;
+    if (rec.link) {
+      // remember the bubble size; the bubble element may be removed while the line is still showing
+      if (rec.link.isConnected) { rec.linkH = rec.link.offsetHeight; rec.linkW = rec.link.offsetWidth; }
+      const el = rec.a.firstChild;
+      if (rec.mode === 'above') {
+        const w = el.offsetWidth || 0;
+        el.style.marginTop = `${-((rec.linkH || 90) + 8)}px`;
+        px = Math.min(Math.max(x, w / 2 + 6), W - w / 2 - 6);
+      } else {
+        // beside the bubble on the outward side, or inward when there is no room
+        const off = (rec.linkW || 70) / 2 + 22;
+        let dir = rec.side === 'left' ? -1 : 1;
+        if (x + dir * off < 22 || x + dir * off > W - 22) dir = -dir;
+        el.style.marginLeft = `${dir * off}px`;
+        el.style.marginTop = `${-(rec.linkH || 90) / 2}px`;
+      }
+    } else if (rec.clamp) {
       // keep side-placed speech fully on screen
       const w = (rec.a.firstChild.offsetWidth || 0) + 40;
       px = rec.clamp === 'left' ? Math.max(x, w + 6) : Math.min(x, window.innerWidth - w - 6);
