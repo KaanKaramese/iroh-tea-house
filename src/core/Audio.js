@@ -99,6 +99,7 @@ export class Sfx {
         this.tone(220, 0.4, { type: 'sawtooth', vol: 0.08, slideTo: 110 });
         this.tone(233, 0.4, { type: 'sawtooth', vol: 0.06, slideTo: 104 });
         break;
+      case 'waste': this.tone(392, 0.18, { type: 'square', vol: 0.05, slideTo: 180 }); this.noise(0.2, { vol: 0.08, freq: 300 }); break;
       case 'combo': {
         const base = 523 * Math.pow(2, Math.min(arg, 12) / 12);
         this.arp([base, base * 1.5], 0.06, { type: 'triangle', vol: 0.12, dur: 0.14 });

@@ -79,8 +79,8 @@ export const TUNING = {
   customersPerLevel: 6,
   startSeats: 2,           // active corners at level 1 (grows to 4)
   startDishes: 4,          // dish types unlocked at level 1 (grows to 6)
-  maxBeltItems: 14,        // dishes ride the belt until taken; cap so it can't be flooded
+  wasteLaps: 2,            // laps a dish may ride the belt before it is thrown away
   needBias: 0.45,          // chance a refilled grid cell is a currently-requested dish
-  mood: { start: 100, happy: 7, angry: -24 },
-  score: { perDish: 100, speedBonus: 100, comboStep: 0.25, comboMax: 3 },
+  mood: { start: 100, happy: 7, angry: -24, waste: -5 },
+  score: { perDish: 100, speedBonus: 100, waste: -20, comboStep: 0.25, comboMax: 3 },
 };

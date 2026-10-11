@@ -92,6 +92,7 @@ export class Conveyor {
     this.path = new BeltPath(W, D, r);
     this.beltTop = beltTop;
     this.speed = 2.3;
+    this.maxLaps = 2; // default; Game overrides it from TUNING.wasteLaps
     this.offset = 0;
     this.group = new THREE.Group();
     scene.add(this.group);
@@ -204,6 +205,8 @@ export class Conveyor {
   }
 
   addItem(item) {
+    item.traveled = 0;
+    item.baseScale = item.obj.scale.x;
     this.items.push(item);
   }
 
@@ -213,7 +216,7 @@ export class Conveyor {
   }
 
   /** Advances belt and items. `onPass(item, cornerIndex)` returns true when the corner takes the item. */
-  update(dt, t, onPass) {
+  update(dt, t, onPass, onLap) {
     const ds = this.speed * dt;
     this.offset = this.path.wrap(this.offset + ds);
     this.updateSlats();
@@ -222,9 +225,14 @@ export class Conveyor {
     for (const it of this.items.slice()) {
       const prev = it.s;
       it.s = this.path.wrap(it.s + ds);
+      it.traveled += ds;
       this.path.point(it.s, it.obj.position);
       it.obj.position.y = this.beltTop + 0.015;
       it.obj.rotation.y += dt * 0.6;
+      // last stretch before it is thrown away: pulse so the player can react
+      const left = this.maxLaps * this.path.length - it.traveled;
+      const urgent = left < this.path.length * 0.4;
+      it.obj.scale.setScalar(it.baseScale * (urgent ? 1 + 0.09 * Math.sin(t * 14) : 1));
       // corner checks (handle wrap-around)
       let taken = false;
       for (let ci = 0; ci < this.path.corners.length && !taken; ci++) {
@@ -232,6 +240,7 @@ export class Conveyor {
         const crossed = prev <= it.s ? (prev < cs && cs <= it.s) : (cs > prev || cs <= it.s);
         if (crossed && onPass(it, ci)) taken = true;
       }
+      if (!taken && it.traveled >= this.maxLaps * this.path.length - 0.05) onLap(it);
     }
   }
 

@@ -42,6 +42,7 @@ export class Game {
 
     this.house = new TeaHouse(this.scene, assets.props);
     this.conveyor = new Conveyor(this.scene, LAYOUT, paiShoTexture());
+    this.conveyor.maxLaps = TUNING.wasteLaps;
     this.grid = new FoodGrid(this.scene, assets.dishes, LAYOUT);
 
     // Sokka the chef
@@ -248,13 +249,6 @@ export class Game {
 
   // ---------------------------------------------------------------- core loop actions
   select(c) {
-    // dishes stay on the belt until someone takes them, so cap how many can ride at once
-    if (this.conveyor.items.length + this.flying.size >= TUNING.maxBeltItems) {
-      this.grid.nope(c, 0);
-      this.sfx.play('nope');
-      this.hud.toast('The belt is full!', 900);
-      return;
-    }
     const taken = this.grid.take(c, () => this.rollDish());
     const x = this.grid.colX(c);
     this.sfx.play('throw');
@@ -301,6 +295,27 @@ export class Game {
     this.conveyor.removeItem(item);
     this.customers.deliver(c, item);
     return true;
+  }
+
+  /** A dish finished its last lap without a taker: it is thrown away. */
+  onBeltLap(item) {
+    this.conveyor.removeItem(item);
+    const obj = item.obj;
+    const p = obj.position.clone();
+    const s0 = obj.scale.x;
+    this.tweens.add({
+      duration: 0.45,
+      update: (k) => { obj.position.y = p.y + k * 0.6; obj.scale.setScalar(s0 * (1 - k)); obj.rotation.y += 0.3; },
+      onComplete: () => this.scene.remove(obj),
+    });
+    this.particles.emit(p.clone().setY(p.y + 0.3), { kind: 'soft', count: 8, color: '#9a8a7a', speed: 0.8, up: 0.8, life: 0.7, size: 0.3, gravity: 0 });
+    if (this.state !== 'playing') return;
+    this.score = Math.max(0, this.score + TUNING.score.waste);
+    this.hud.setScore(this.score);
+    this.hud.popup(p.clone().setY(p.y + 0.6), `Wasted ${TUNING.score.waste}`, 'bad small');
+    this.breakCombo();
+    this.addMood(TUNING.mood.waste);
+    this.sfx.play('waste');
   }
 
   onDishDelivered(c) {
@@ -385,7 +400,7 @@ export class Game {
     this.tweens.update(dt);
     this.particles.update(dt);
     this.house.update(t);
-    this.conveyor.update(dt, t, (it, ci) => this.onBeltPass(it, ci));
+    this.conveyor.update(dt, t, (it, ci) => this.onBeltPass(it, ci), (it) => this.onBeltLap(it));
 
     const wanted = new Set(playing ? this.customers.pendingDishes() : []);
     this.grid.update(dt, t, wanted);

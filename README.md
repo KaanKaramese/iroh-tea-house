@@ -20,9 +20,9 @@ To make a production build in `dist/`, run `npm run build`. To serve that build,
 - **Customers** stand at the four table corners. A thought bubble shows each customer's order and a patience bar.
 - **Food grid:** click a dish in the front row (the one with the gold frame), or press `1`–`4`. Sokka throws the dish onto the belt where it's level with that column. The column then slides up one cell, and a new dish appears at the back.
 - **Belt:** it runs clockwise (front → left → back → right). The first customer who wants a passing dish takes it, eats it, cheers and leaves. A new customer then walks in.
-- **Belt:** dishes keep riding the belt until a customer who wants one takes it, so nothing is lost. The belt holds at most 14 dishes at a time.
+- **Waste:** a dish that goes around the belt twice with no taker is thrown away. You lose 20 points and your combo, and the mood drops a little. A dish on its last lap pulses to warn you.
 - **Score:** each order gives base points plus a speed bonus, multiplied by your combo. The combo multiplier goes up to x3.
-- **Mood:** happy customers raise the tea house mood. Customers who run out of patience lower it a lot. When mood reaches 0, the game ends and you can restart.
+- **Mood:** happy customers raise the tea house mood. Customers who run out of patience lower it a lot, and wasted dishes lower it a little. When mood reaches 0, the game ends and you can restart.
 - **Levels:** every 6 customers served opens another corner (up to 4) and adds a dish to the menu (up to 6). Each level also speeds up the belt, shortens patience and makes two-dish orders more common.
 - **Keys:** `P` / `Esc` pause, `M` mute, `Enter` start / restart.
 
