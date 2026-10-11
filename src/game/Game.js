@@ -425,7 +425,7 @@ export class Game {
     this.house.update(t);
     this.conveyor.update(dt, t, (it, ci) => this.onBeltPass(it, ci), (it) => this.onBeltLap(it));
 
-    const wanted = new Set(playing ? this.customers.pendingDishes() : []);
+    const wanted = new Set(playing ? this.customers.orderedDishes() : []);
     this.grid.update(dt, t, wanted);
     if (playing && this.grid.hover >= 0) {
       // landing marker follows the slot the hovered column would really use (red = belt full)

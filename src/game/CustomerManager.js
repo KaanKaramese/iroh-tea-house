@@ -43,6 +43,20 @@ export class CustomerManager {
     order.slice(0, n).forEach((i) => { this.seats[i].active = true; });
   }
 
+  /**
+   * Dishes customers have placed an order for (their thought bubble is showing). Used for what the
+   * player can see, e.g. highlighting the grid, so it must not reveal orders before they are made.
+   */
+  orderedDishes() {
+    const out = [];
+    for (const c of this.customers) {
+      if (c.state !== 'waiting' && c.state !== 'eating') continue;
+      for (const o of c.order) if (!o.done) out.push(o.id);
+    }
+    return out;
+  }
+
+  /** Includes customers still walking to their seat; only for hidden logic like refilling the grid. */
   pendingDishes() {
     const out = [];
     for (const c of this.customers) {
