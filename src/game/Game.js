@@ -15,6 +15,7 @@ import { HUD } from '../ui/HUD.js';
 
 const $ = (id) => document.getElementById(id);
 const BELT_DISH_SCALE = 1.25;
+const THROW_TIME = 0.42; // seconds a dish spends in the air
 
 export class Game {
   constructor(container) {
@@ -81,6 +82,7 @@ export class Game {
     this.conveyor.items.length = 0;
     for (const o of this.flying || []) this.scene.remove(o);
     this.flying = new Set();
+    this.pending = []; // landing slots reserved by dishes still in the air
 
     this.score = 0;
     this.combo = 0;
@@ -244,13 +246,33 @@ export class Game {
 
   setHover(col) {
     this.grid.hover = col;
-    this.conveyor.showMarker(col >= 0 ? this.grid.colX(col) : null);
+    if (col < 0) this.conveyor.showMarker(null);
   }
 
   // ---------------------------------------------------------------- core loop actions
+  /**
+   * Where a dish thrown now at column x would land, or null when the belt is full. Looks ahead to
+   * the landing time so belt dishes and dishes already in the air are accounted for.
+   */
+  findLandingSlot(x) {
+    const v = this.conveyor.speed;
+    const tLand = this.time + THROW_TIME;
+    const occupied = this.conveyor.items.map((it) => it.s + v * THROW_TIME);
+    for (const p of this.pending) occupied.push(p.s + v * (tLand - p.t));
+    return this.conveyor.findSlot(this.conveyor.path.sFromFrontX(x), occupied);
+  }
+
   select(c) {
-    const taken = this.grid.take(c, () => this.rollDish());
     const x = this.grid.colX(c);
+    const sLand = this.findLandingSlot(x);
+    if (sLand === null) {
+      // belt is full: nothing can be sent
+      this.grid.nope(c, 0);
+      this.sfx.play('nope');
+      this.hud.toast('The belt is full!', 900);
+      return;
+    }
+    const taken = this.grid.take(c, () => this.rollDish());
     this.sfx.play('throw');
     this.picks++;
     if (this.picks >= 3) this.hud.showHint(false);
@@ -265,11 +287,12 @@ export class Game {
     this.scene.add(obj);
     this.flying.add(obj);
     const from = obj.position.clone();
-    const sLand = this.conveyor.path.sFromFrontX(x);
     const to = this.conveyor.path.point(sLand).setY(this.conveyor.beltTop + 0.015);
     const s0 = taken.scale;
+    const reservation = { s: sLand, t: this.time + THROW_TIME };
+    this.pending.push(reservation);
     this.tweens.add({
-      duration: 0.42, ease: Ease.linear,
+      duration: THROW_TIME, ease: Ease.linear,
       update: (k) => {
         const e = Ease.inOutQuad(k);
         obj.position.lerpVectors(from, to, e);
@@ -279,9 +302,9 @@ export class Game {
       },
       onComplete: () => {
         this.flying.delete(obj);
+        this.pending.splice(this.pending.indexOf(reservation), 1);
         if (this.state !== 'playing') { this.scene.remove(obj); return; }
-        const s = this.conveyor.freeSlot(this.conveyor.path.sFromFrontX(x));
-        this.conveyor.addItem({ id: taken.id, obj, s });
+        this.conveyor.addItem({ id: taken.id, obj, s: sLand });
         this.sfx.play('land');
         this.particles.emit(to.clone().setY(this.conveyor.beltTop + 0.1), { kind: 'soft', count: 5, color: '#fff1d0', speed: 0.8, up: 0.4, life: 0.45, size: 0.22, gravity: 0 });
       },
@@ -404,6 +427,12 @@ export class Game {
 
     const wanted = new Set(playing ? this.customers.pendingDishes() : []);
     this.grid.update(dt, t, wanted);
+    if (playing && this.grid.hover >= 0) {
+      // landing marker follows the slot the hovered column would really use (red = belt full)
+      const x = this.grid.colX(this.grid.hover);
+      const slot = this.findLandingSlot(x);
+      this.conveyor.showMarker(slot ?? this.conveyor.path.sFromFrontX(x), slot !== null);
+    }
     this.customers.update(dt, playing);
     this.updateChef(dt);
     this.host.update(dt);

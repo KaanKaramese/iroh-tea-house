@@ -85,6 +85,9 @@ export function roundedSlab(hw, hd, r, depth, bevel = 0.03) {
   return geo;
 }
 
+/** Minimum distance between the centres of two dishes on the belt (plates are ~0.45 wide). */
+export const SLOT_GAP = 0.62;
+
 /** The lacquered table, the moving slat belt and everything riding on it. */
 export class Conveyor {
   constructor(scene, layout, paiShoTex) {
@@ -182,26 +185,32 @@ export class Conveyor {
     this.slats.instanceMatrix.needsUpdate = true;
   }
 
-  showMarker(x) {
-    if (x === null) { this.markerTarget = 0; return; }
-    const s = this.path.sFromFrontX(x);
+  /** Shows the landing marker at path position s; red when no dish can land there. */
+  showMarker(s, ok = true) {
+    if (s === null) { this.markerTarget = 0; return; }
     this.path.point(s, this.marker.position);
     this.marker.position.y = this.beltTop + 0.03;
+    this.marker.material.color.set(ok ? '#ffe08a' : '#ff5a4a');
     this.markerTarget = 0.85;
   }
 
-  /** Find a free spot near `s` so plates never overlap. */
-  freeSlot(s) {
-    const gap = 0.62;
-    for (let tries = 0; tries < 40; tries++) {
-      const clash = this.items.some((it) => {
-        const d = Math.abs(this.path.wrap(it.s - s));
-        return Math.min(d, this.path.length - d) < gap;
-      });
-      if (!clash) return s;
-      s = this.path.wrap(s - 0.2);
+  /**
+   * Nearest path position to `target` whose neighbours (positions in `occupied`) are all at
+   * least SLOT_GAP away, or null when the belt has no room left. All dishes move at the same
+   * speed, so spacing chosen at landing time is kept for as long as they ride the belt.
+   */
+  findSlot(target, occupied) {
+    const L = this.path.length;
+    const free = (s) => occupied.every((o) => {
+      const d = Math.abs(this.path.wrap(o - s));
+      return Math.min(d, L - d) >= SLOT_GAP;
+    });
+    const step = 0.05;
+    for (let off = 0; off <= L / 2; off += step) {
+      if (free(this.path.wrap(target + off))) return this.path.wrap(target + off);
+      if (off > 0 && free(this.path.wrap(target - off))) return this.path.wrap(target - off);
     }
-    return s;
+    return null;
   }
 
   addItem(item) {
