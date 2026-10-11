@@ -112,20 +112,30 @@ export class HUD {
     setTimeout(() => this._remove(b._rec), 260);
   }
 
-  speech(obj, text, seconds = 2) {
+  /** Outward side of a character (away from the table) so overlays never cover its order bubble. */
+  sideOf(obj) { return obj.position.x < 0 ? 'left' : 'right'; }
+
+  /**
+   * side 'auto' | 'left' | 'right': the line sits beside the head, level with the face.
+   * Without a side it floats above the head (used for Iroh, who has no order bubble).
+   */
+  speech(obj, text, seconds = 2, side = null) {
+    if (side === 'auto') side = this.sideOf(obj);
     const s = document.createElement('div');
-    s.className = 'speech';
+    s.className = side ? `speech ${side}` : 'speech';
     s.textContent = text;
-    const rec = this._anchor(obj, 2.05, s, seconds);
+    const rec = this._anchor(obj, side ? 0.78 : 2.05, s, seconds);
     rec.fade = s;
+    rec.clamp = side;
     return rec;
   }
 
-  emote(obj, emoji, height = 1.7) {
+  emote(obj, emoji, height = 1.7, side = null) {
+    if (side === 'auto') side = this.sideOf(obj);
     const e = document.createElement('div');
-    e.className = 'emote';
+    e.className = side ? `emote ${side}` : 'emote';
     e.textContent = emoji;
-    this._anchor(obj, height, e, 1.4);
+    this._anchor(obj, side ? Math.min(height, 1.3) : height, e, 1.4);
   }
 
   popup(worldPos, text, cls = '') {
@@ -146,7 +156,13 @@ export class HUD {
     this.v.project(this.camera);
     const x = (this.v.x * 0.5 + 0.5) * window.innerWidth;
     const y = (-this.v.y * 0.5 + 0.5) * window.innerHeight;
-    rec.a.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    let px = x;
+    if (rec.clamp) {
+      // keep side-placed speech fully on screen
+      const w = (rec.a.firstChild.offsetWidth || 0) + 40;
+      px = rec.clamp === 'left' ? Math.max(x, w + 6) : Math.min(x, window.innerWidth - w - 6);
+    }
+    rec.a.style.transform = `translate(${px.toFixed(1)}px, ${y.toFixed(1)}px)`;
   }
 
   update(dt, camera) {
