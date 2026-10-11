@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Iroh's Tea House</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍵</text></svg>" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="ui">
+      <!-- in-world overlays (bubbles, popups) -->
+      <div id="world-layer"></div>
+
+      <!-- HUD -->
+      <div id="hud" class="hidden">
+        <div class="hud-left panel">
+          <div class="stat"><span class="label">Score</span><span id="score" class="value">0</span></div>
+          <div class="stat combo" id="combo-box"><span class="label">Combo</span><span id="combo" class="value">x0</span></div>
+        </div>
+        <div class="hud-center panel">
+          <div class="mood-title">🍵 Tea House Mood</div>
+          <div class="mood-bar"><div id="mood-fill"></div></div>
+        </div>
+        <div class="hud-right panel">
+          <div class="stat"><span class="label">Level</span><span id="level" class="value">1</span></div>
+          <div class="stat"><span class="label">Served</span><span id="served" class="value">0</span></div>
+          <button id="btn-mute" class="icon-btn" title="Mute (M)">🔊</button>
+          <button id="btn-pause" class="icon-btn" title="Pause (P)">⏸</button>
+        </div>
+      </div>
+      <div id="toast"></div>
+      <div id="hint" class="hidden">Click a dish in the <b>front row</b> (or press <b>1–6</b>) to send it down the belt</div>
+
+      <!-- Screens -->
+      <div id="screen-loading" class="screen">
+        <div class="card">
+          <h1>Iroh's Tea House</h1>
+          <p class="sub">Ba Sing Se · Upper Ring</p>
+          <div class="loadbar"><div id="load-fill"></div></div>
+          <p id="load-text" class="small">Brewing assets…</p>
+        </div>
+      </div>
+
+      <div id="screen-title" class="screen hidden">
+        <div class="card">
+          <h1>Iroh's Tea House</h1>
+          <p class="sub">Sokka's Kitchen Rush · Ba Sing Se</p>
+          <ul class="howto">
+            <li><span>💭</span><div>Customers at the four corners think of the dish they want.</div></li>
+            <li><span>👆</span><div>Click a dish in the <b>front row</b> of the food grid (or press <b>1–6</b>). Sokka sends it onto the belt and the column slides up.</div></li>
+            <li><span>🔄</span><div>The belt runs clockwise. A dish is grabbed by the first customer who wants it.</div></li>
+            <li><span>⏳</span><div>Serve them before their patience runs out. Dishes nobody takes come back as waste.</div></li>
+            <li><span>🔥</span><div>Keep serving without a miss to build your combo multiplier.</div></li>
+          </ul>
+          <button id="btn-start" class="big-btn">Open the Tea House</button>
+          <p class="small">P: pause · M: mute</p>
+        </div>
+      </div>
+
+      <div id="screen-pause" class="screen hidden">
+        <div class="card">
+          <h2>Tea Break</h2>
+          <p class="sub">"Sometimes the best thing to do is sit and sip."</p>
+          <button id="btn-resume" class="big-btn">Resume</button>
+          <button id="btn-quit" class="link-btn">Restart</button>
+        </div>
+      </div>
+
+      <div id="screen-over" class="screen hidden">
+        <div class="card">
+          <h2>The Tea House Closes</h2>
+          <p class="sub" id="over-quote">The customers left unhappy… but tomorrow is a new pot of tea.</p>
+          <div class="results">
+            <div><span class="label">Score</span><span id="final-score" class="value">0</span></div>
+            <div><span class="label">Best</span><span id="best-score" class="value">0</span></div>
+            <div><span class="label">Served</span><span id="final-served" class="value">0</span></div>
+            <div><span class="label">Max Combo</span><span id="final-combo" class="value">0</span></div>
+          </div>
+          <button id="btn-restart" class="big-btn">Brew Another Pot</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
