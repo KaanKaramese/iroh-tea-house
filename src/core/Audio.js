@@ -112,6 +112,12 @@ export class Sfx {
         break;
       case 'levelup': this.arp([523, 659, 784, 1046, 1318], 0.08, { type: 'triangle', vol: 0.15, dur: 0.25 }); break;
       case 'gameover': this.arp([523, 466, 392, 349, 262], 0.22, { type: 'triangle', vol: 0.15, dur: 0.4 }); break;
+      case 'tea': this.arp([784, 988, 1175, 1568], 0.11, { type: 'sine', vol: 0.12, dur: 0.5 }); break;
+      case 'gong':
+        this.tone(98, 2.2, { type: 'sine', vol: 0.35, attack: 0.01 });
+        this.tone(147, 1.8, { type: 'triangle', vol: 0.12, attack: 0.01 });
+        this.tone(233, 1.2, { type: 'sine', vol: 0.06, attack: 0.01 });
+        break;
       case 'start': this.arp([392, 523, 659, 784], 0.09, { type: 'triangle', vol: 0.14, dur: 0.22 }); break;
       default: break;
     }

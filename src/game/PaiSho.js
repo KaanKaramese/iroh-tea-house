@@ -67,9 +67,11 @@ export class PaiSho {
   }
 
   /** Put a different Earth Kingdom local in the opponent's seat. */
-  rollOpponent(animate = true) {
-    let i;
-    do { i = Math.floor(Math.random() * this.opponents.length); } while (i === this.opponentIndex && this.opponents.length > 1);
+  rollOpponent(animate = true, id = null) {
+    let i = id ? this.opponents.findIndex((c) => c.def.id === id) : -1;
+    if (i < 0) {
+      do { i = Math.floor(Math.random() * this.opponents.length); } while (i === this.opponentIndex && this.opponents.length > 1);
+    } else if (i === this.opponentIndex) return; // already seated
     this.opponentIndex = i;
     const seat = this.opp;
     if (seat.char) this.scene.remove(seat.char.root);

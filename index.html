@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Iroh's Tea House</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍵</text></svg>" />
   </head>
@@ -22,14 +22,21 @@
         <div class="hud-center panel">
           <div class="mood-title">🍵 Tea House Mood</div>
           <div class="mood-bar"><div id="mood-fill"></div></div>
+          <div id="goal" class="goal hidden">
+            <span id="goal-text">🍜 0/0</span>
+            <span id="goal-time" class="goal-time"><span id="goal-ring" class="goal-ring"></span><span id="goal-time-text"></span></span>
+            <span id="rush" class="rush hidden">🔔 RUSH</span>
+          </div>
         </div>
         <div class="hud-right panel">
-          <div class="stat"><span class="label">Level</span><span id="level" class="value">1</span></div>
-          <div class="stat"><span class="label">Served</span><span id="served" class="value">0</span></div>
+          <div class="stat"><span id="level-label" class="label">Level</span><span id="level" class="value">1</span></div>
+          <div class="stat" id="served-box"><span class="label">Served</span><span id="served" class="value">0</span></div>
+          <button id="btn-tea" class="icon-btn tea hidden" title="Iroh's Tea Time (T)" disabled>🫖</button>
           <button id="btn-mute" class="icon-btn" title="Mute (M)">🔊</button>
           <button id="btn-pause" class="icon-btn" title="Pause (P)">⏸</button>
         </div>
       </div>
+      <div id="tea-overlay"></div>
       <div id="toast"></div>
       <div id="hint" class="hidden">Click a dish in the <b>front row</b> (or press <b>1–4</b>) to send it down the belt</div>
 
@@ -55,7 +62,60 @@
             <li><span>🔥</span><div>Keep serving without a miss to build your combo multiplier.</div></li>
           </ul>
           <button id="btn-start" class="big-btn">Open the Tea House</button>
+          <button id="btn-endless" class="alt-btn">Endless Rush</button>
           <p class="small">P: pause · M: mute</p>
+        </div>
+      </div>
+
+      <div id="screen-days" class="screen hidden">
+        <div class="card days-card">
+          <h2>Days at the Tea House</h2>
+          <p class="sub">Clear a day to unlock the next.</p>
+          <div id="days-list" class="days-list"></div>
+          <button id="btn-days-back" class="link-btn">Back</button>
+        </div>
+      </div>
+
+      <div id="screen-intro" class="screen hidden">
+        <div class="card intro-card">
+          <p id="intro-ring" class="ring-label"></p>
+          <h2 id="intro-title"></h2>
+          <div class="intro-teach"><span id="intro-icon"></span><span id="intro-teach"></span></div>
+          <p id="intro-goal" class="intro-goal"></p>
+          <ul class="intro-stars">
+            <li><span class="st">★</span> Reach the goal</li>
+            <li><span class="st">★★</span> No angry guests</li>
+            <li><span class="st">★★★</span> <span id="intro-star3"></span></li>
+          </ul>
+          <p id="intro-guest" class="intro-guest"></p>
+          <button id="btn-intro-start" class="big-btn">Start</button>
+          <div class="intro-progress"><div id="intro-bar"></div></div>
+        </div>
+      </div>
+
+      <div id="screen-results" class="screen hidden">
+        <div class="card">
+          <h2 id="res-title">Day Cleared!</h2>
+          <p id="res-sub" class="sub"></p>
+          <div id="res-stars" class="res-stars">
+            <div class="res-star"><span class="big-star">★</span><span class="star-label"></span></div>
+            <div class="res-star"><span class="big-star">★</span><span class="star-label"></span></div>
+            <div class="res-star"><span class="big-star">★</span><span class="star-label"></span></div>
+          </div>
+          <div class="results">
+            <div><span class="label">Plates</span><span id="res-plates" class="value">0</span></div>
+            <div><span class="label">Time</span><span id="res-time" class="value">0:00</span></div>
+            <div><span class="label">Score</span><span id="res-score" class="value">0</span></div>
+            <div><span class="label">Best</span><span id="res-best" class="value">0</span></div>
+          </div>
+          <p id="res-tip" class="res-tip hidden"></p>
+          <p id="res-unlock" class="res-unlock"></p>
+          <div class="res-buttons">
+            <button id="btn-next" class="big-btn">Next Day</button>
+            <button id="btn-retry" class="alt-btn">Retry</button>
+            <button id="btn-gentle" class="alt-btn gentle hidden">🍃 Try Gentle mode</button>
+            <button id="btn-days" class="link-btn">All days</button>
+          </div>
         </div>
       </div>
 
@@ -64,7 +124,8 @@
           <h2>Tea Break</h2>
           <p class="sub">"Sometimes the best thing to do is sit and sip."</p>
           <button id="btn-resume" class="big-btn">Resume</button>
-          <button id="btn-quit" class="link-btn">Restart</button>
+          <button id="btn-quit" class="alt-btn">Retry</button>
+          <button id="btn-pause-menu" class="link-btn">Quit to menu</button>
         </div>
       </div>
 
@@ -79,6 +140,7 @@
             <div><span class="label">Max Combo</span><span id="final-combo" class="value">0</span></div>
           </div>
           <button id="btn-restart" class="big-btn">Brew Another Pot</button>
+          <button id="btn-over-menu" class="link-btn">Menu</button>
         </div>
       </div>
     </div>

@@ -173,6 +173,116 @@ html, body {
 .results > div { background: rgba(255, 255, 255, 0.55); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; }
 .results .value { font-family: var(--display); font-size: 26px; font-weight: bold; }
 
+/* ---------- Campaign: buttons, day list, intro, results ---------- */
+.alt-btn {
+  display: block; margin: 12px auto 0; background: #fff7e6; color: var(--ink); border: 2px solid var(--gold-deep);
+  font-size: 16px; font-weight: bold; padding: 9px 22px; border-radius: 12px; cursor: pointer;
+}
+.alt-btn:hover:not(:disabled) { background: #ffe9b8; }
+.alt-btn:disabled { opacity: 0.55; cursor: default; }
+.res-buttons .big-btn, .res-buttons .alt-btn { margin: 0 auto; }
+.res-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.days-card { max-width: 620px; }
+.days-list {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 4px 0 6px;
+  max-height: 62vh; overflow-y: auto; touch-action: pan-y; padding: 2px 4px 6px;
+}
+.ring-title {
+  grid-column: 1 / -1; text-align: left; font-family: var(--display); font-weight: bold; color: var(--gold-deep);
+  letter-spacing: 1px; margin-top: 6px; font-size: 15px; border-bottom: 1px solid rgba(168, 118, 31, 0.35);
+}
+.day-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 92px; padding: 8px 4px;
+  background: linear-gradient(180deg, #fffdf4, #f6e7c4); border: 2px solid var(--gold-deep); border-radius: 14px;
+  cursor: pointer; color: var(--ink); font-family: var(--font); transition: transform 0.1s;
+}
+.day-tile:hover:not(:disabled) { transform: translateY(-2px); }
+.day-tile.cleared { background: linear-gradient(180deg, #f3fbe9, #dcefc6); }
+.day-tile.locked { opacity: 0.5; cursor: default; filter: grayscale(0.5); }
+.day-tile.endless { grid-column: 1 / -1; min-height: 64px; flex-direction: row; justify-content: center; gap: 14px; }
+.day-num { font-family: var(--display); font-size: 26px; font-weight: bold; color: var(--jade-deep); }
+.day-name { font-size: 13px; font-weight: bold; line-height: 1.15; }
+.day-stars { font-size: 16px; letter-spacing: 1px; color: #c9b48a; }
+.day-stars .on { color: #e9a92a; text-shadow: 0 1px 0 #8a5a12; }
+.day-stars.small { font-size: 12px; color: #8a6a4a; }
+
+.ring-label { margin: 0 0 2px; color: var(--gold-deep); font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; }
+.intro-card h2 { font-size: 34px; margin-bottom: 10px; }
+.intro-teach {
+  display: flex; gap: 12px; align-items: center; justify-content: center; text-align: left;
+  background: rgba(255, 255, 255, 0.6); border-radius: 14px; padding: 10px 14px; margin: 0 0 12px; font-size: 16px;
+}
+#intro-icon { font-size: 34px; flex: none; }
+.intro-goal { font-size: 19px; font-weight: bold; color: var(--red); margin: 6px 0 8px; }
+.intro-stars { list-style: none; padding: 0; margin: 0 auto 10px; display: inline-block; text-align: left; font-size: 14px; }
+.intro-stars li { margin: 4px 0; }
+.intro-stars .st { display: inline-block; width: 48px; color: #e9a92a; text-shadow: 0 1px 0 #8a5a12; }
+.intro-guest { margin: 0 0 12px; color: var(--jade-deep); font-weight: bold; min-height: 1em; }
+.intro-progress { height: 4px; background: #e2d3b4; border-radius: 2px; overflow: hidden; margin: 14px auto 0; width: 60%; }
+#intro-bar { height: 100%; width: 0; background: var(--jade); }
+
+.res-stars { display: flex; justify-content: center; gap: 14px; margin: 4px 0 14px; }
+.res-star { display: flex; flex-direction: column; align-items: center; width: 110px; }
+.big-star {
+  font-size: 54px; line-height: 1; color: transparent; -webkit-text-stroke: 2px #b8a27a;
+}
+.res-star.on .big-star { color: #f2b632; -webkit-text-stroke: 2px #8a5a12; animation: starPop 0.5s cubic-bezier(.2, 1.8, .4, 1) both; animation-delay: inherit; }
+.res-star { animation: none; }
+.star-label { font-size: 12px; color: #6a5236; margin-top: 4px; line-height: 1.2; }
+.res-star:not(.on) .star-label { opacity: 0.6; }
+.res-tip { background: #fdeee4; border: 1px solid #e8b9a2; border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; font-size: 14px; color: #7a3020; }
+.res-unlock { color: var(--jade-deep); font-weight: bold; margin: 0 0 14px; min-height: 1em; }
+@keyframes starPop { from { transform: scale(0.2) rotate(-30deg); opacity: 0; } }
+
+/* HUD goal pill + shift clock */
+.goal { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 2px; font-weight: bold; font-size: 16px; }
+.goal.near #goal-text { color: var(--red); animation: pulse 0.5s ease-in-out infinite alternate; }
+.goal.bump #goal-text { animation: goalBump 0.35s ease-out; }
+.goal-time { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.goal-time.low { color: var(--red); }
+.goal-ring {
+  --p: 1; width: 16px; height: 16px; border-radius: 50%;
+  background: conic-gradient(var(--jade) calc(var(--p) * 360deg), #e2d3b4 0);
+}
+.goal-time.low .goal-ring { background: conic-gradient(var(--red) calc(var(--p) * 360deg), #e2d3b4 0); }
+@keyframes goalBump { 40% { transform: scale(1.3); } }
+
+/* teaching cues */
+.guide-hand {
+  position: absolute; transform: translate(-50%, -20%); font-size: 40px; pointer-events: none;
+  animation: guideTap 0.9s ease-in-out infinite; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+}
+@keyframes guideTap { 50% { transform: translate(-50%, 10%) scale(0.9); } }
+.bubble.target { border-color: #f2b632; box-shadow: 0 0 0 4px rgba(242, 182, 50, 0.6), var(--shadow); }
+
+/* iPhone notch / home bar */
+#hud { top: max(12px, env(safe-area-inset-top)); }
+#hint { bottom: max(14px, env(safe-area-inset-bottom)); }
+
+/* ---------- Twists ---------- */
+.bubble.vip { border-color: #d39a1c; background: #fff8e2; box-shadow: 0 0 0 3px rgba(242, 182, 50, 0.55), var(--shadow); }
+.bubble .crown { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 22px; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.35)); }
+.bubble .patience.hidden-bar { position: relative; height: 13px; overflow: visible; }
+.bubble .patience.hidden-bar::after {
+  content: attr(data-q); position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 13px; font-weight: bold; color: #fffdf6;
+}
+.icon-btn.tea.ready { background: #ffe9b8; border-color: #c98a1c; animation: pulse 0.6s ease-in-out infinite alternate; box-shadow: 0 0 12px rgba(242, 182, 50, 0.9); }
+.icon-btn.tea.active { background: #d8f0d0; border-color: var(--jade); }
+.icon-btn.tea:disabled:not(.active) { opacity: 0.45; }
+#tea-overlay {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s;
+  background: radial-gradient(ellipse at center, rgba(255, 220, 150, 0) 45%, rgba(255, 196, 110, 0.38) 100%);
+}
+#tea-overlay.on { opacity: 1; }
+.rush {
+  padding: 1px 9px; border-radius: 12px; background: #b8392a; color: #fff4d6; font-weight: bold; font-size: 13px;
+  animation: pulse 0.45s ease-in-out infinite alternate;
+}
+.day-tile { position: relative; }
+.day-leaf { position: absolute; top: 4px; right: 6px; font-size: 14px; }
+.alt-btn.gentle { border-color: var(--jade); color: var(--jade-deep); }
+
 /* ---------- Animations ---------- */
 @keyframes popIn { from { transform: translate(-50%, -100%) scale(0.3); opacity: 0; } }
 .card { animation-name: cardIn; }
@@ -201,7 +311,7 @@ html, body {
 @media (max-width: 520px) {
   #hud { flex-wrap: wrap; top: 8px; left: 8px; right: 8px; }
   .hud-center { order: 3; flex-basis: 100%; }
-  .stat .label { font-size: 8px; letter-spacing: 0.5px; }
+  .stat .label { font-size: 10px; letter-spacing: 0.5px; }
   #toast { top: 120px; font-size: 20px; }
 }
 
@@ -211,9 +321,23 @@ html, body {
   .hud-center { min-width: 120px; }
   .mood-title { font-size: 10px; }
   .panel { padding: 4px 8px; gap: 8px; }
-  .icon-btn { width: 30px; height: 30px; font-size: 14px; }
+  .icon-btn { width: 40px; height: 40px; font-size: 16px; }
   .bubble .dish, .bubble .dish img { width: 36px; height: 36px; }
   .card h1 { font-size: 30px; }
-  #hint { font-size: 11px; }
+  #hint { font-size: 12px; white-space: normal; max-width: 92vw; text-align: center; }
   .results { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  #hud { top: max(8px, env(safe-area-inset-top)); }
+  .days-list { grid-template-columns: repeat(2, 1fr); }
+  .res-star { width: 92px; }
+  .big-star { font-size: 44px; }
+  .intro-card h2 { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn.tea.ready, .rush,
+  .bubble.urgent, #mood-fill.low, #hint, .combo.hot .value, .goal.near #goal-text, .guide-hand { animation: none !important; }
+  .bubble.urgent { border-width: 4px; }
 }

@@ -1,7 +1,20 @@
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
-export const rand = (a, b) => a + Math.random() * (b - a);
-export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// Gameplay randomness goes through rng() so a run can be replayed exactly from a seed
+// (used by the balance bots). Unseeded it is plain Math.random.
+let rngState = null;
+export function seedRandom(seed) { rngState = seed == null ? null : (seed >>> 0) || 1; }
+export function rng() {
+  if (rngState === null) return Math.random();
+  // mulberry32
+  rngState = (rngState + 0x6d2b79f5) >>> 0;
+  let t = rngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+export const rand = (a, b) => a + rng() * (b - a);
+export const pick = (arr) => arr[Math.floor(rng() * arr.length)];
 
 /** Frame-rate independent exponential smoothing. */
 export const damp = (a, b, lambda, dt) => lerp(a, b, 1 - Math.exp(-lambda * dt));

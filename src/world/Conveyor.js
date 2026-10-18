@@ -132,11 +132,14 @@ export class Conveyor {
     board.receiveShadow = true;
     this.group.add(board);
 
-    // rails
+    // rails (own material so they can glow red when the belt is full)
+    this.railMat = new THREE.MeshStandardMaterial({ color: '#d4a53a', roughness: 0.35, metalness: 0.6, emissive: new THREE.Color('#ff2a10'), emissiveIntensity: 0 });
+    this.fullGlow = 0;
+    this.fullTarget = 0;
     for (const [hw, hd, rr] of [[W + bw / 2 + 0.03, D + bw / 2 + 0.03, r + bw / 2 + 0.03], [W - bw / 2 - 0.03, D - bw / 2 - 0.03, Math.max(0.05, r - bw / 2 - 0.03)]]) {
       const pts = roundedRectShape(hw, hd, rr).getPoints(24).map((p) => new THREE.Vector3(p.x, 0, -p.y));
       const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
-      const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, 240, 0.035, 8, true), gold);
+      const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, 240, 0.035, 8, true), this.railMat);
       rail.position.y = beltTop + 0.01;
       rail.castShadow = true;
       this.group.add(rail);
@@ -225,10 +228,15 @@ export class Conveyor {
   }
 
   /** Advances belt and items. `onPass(item, cornerIndex)` returns true when the corner takes the item. */
+  /** Warn that no dish can be sent right now (rails pulse red). */
+  setFull(full) { this.fullTarget = full ? 1 : 0; }
+
   update(dt, t, onPass, onLap) {
     const ds = this.speed * dt;
     this.offset = this.path.wrap(this.offset + ds);
     this.updateSlats();
+    this.fullGlow += (this.fullTarget - this.fullGlow) * Math.min(1, dt * 8);
+    this.railMat.emissiveIntensity = this.fullGlow * (0.55 + 0.45 * Math.sin(t * 9));
     this.marker.material.opacity += (this.markerTarget * (0.65 + 0.35 * Math.sin(t * 8)) - this.marker.material.opacity) * Math.min(1, dt * 12);
 
     for (const it of this.items.slice()) {
@@ -239,7 +247,8 @@ export class Conveyor {
       it.obj.position.y = this.beltTop + 0.015;
       it.obj.rotation.y += dt * 0.6;
       // last stretch before it is thrown away: pulse so the player can react
-      const left = this.maxLaps * this.path.length - it.traveled;
+      const laps = it.maxLaps ?? this.maxLaps; // spill dishes ride fewer laps
+      const left = laps * this.path.length - it.traveled;
       const urgent = left < this.path.length * 0.4;
       it.obj.scale.setScalar(it.baseScale * (urgent ? 1 + 0.09 * Math.sin(t * 14) : 1));
       // corner checks (handle wrap-around)
@@ -249,7 +258,7 @@ export class Conveyor {
         const crossed = prev <= it.s ? (prev < cs && cs <= it.s) : (cs > prev || cs <= it.s);
         if (crossed && onPass(it, ci)) taken = true;
       }
-      if (!taken && it.traveled >= this.maxLaps * this.path.length - 0.05) onLap(it);
+      if (!taken && it.traveled >= laps * this.path.length - 0.05) onLap(it);
     }
   }
 

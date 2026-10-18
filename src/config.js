@@ -22,6 +22,8 @@ export const CUSTOMERS = [
   },
   {
     id: 'zuko', name: 'Zuko', file: 'zuko.glb',
+    // quirk (days with quirks on): impatient, but a fast serve is worth double
+    quirk: { patienceMul: 0.75, speedBonusMul: 2, emote: '😤' },
     likes: ['skewers', 'duck', 'noodles', 'dumplings'],
   },
   {
@@ -34,6 +36,8 @@ export const CUSTOMERS = [
   },
   {
     id: 'mai', name: 'Mai', file: 'mai.glb',
+    // quirk: very patient, but you can't see how patient until it is nearly gone
+    quirk: { patienceMul: 1.4, hiddenBar: 0.3, emote: '😑' },
     likes: ['teacake', 'cactusjuice', 'dumplings', 'noodles'],
   },
 ];
@@ -91,8 +95,14 @@ export const TUNING = {
   customersPerLevel: 6,
   startSeats: 2,           // active corners at level 1 (grows to 4)
   startDishes: 4,          // dish types unlocked at level 1 (grows to 6)
+  throwCooldown: 0.25,     // seconds between throws (a tap during it is queued, not dropped)
   wasteLaps: 2,            // laps a dish may ride the belt before it is thrown away
   needBias: 0.45,          // chance a refilled grid cell is a currently-requested dish
   mood: { start: 100, happy: 7, angry: -24, waste: -5 },
+  // campaign twists (switched on per day in src/levels.js)
+  teaTime: { comboPerCharge: 5, maxCharges: 1, duration: 6, beltMul: 0.5 },
+  vip: { every: 4, patienceMul: 0.65, scoreMul: 3, angryMoodMul: 1.5 },
+  rush: { first: 25, every: 45, warn: 3, duration: 15, beltMul: 1.35, spawnMul: 0.6 },
+  gentle: { patienceMul: 1.25, extraLaps: 1, angryMoodMul: 0.5, wasteMoodMul: 0.5, needBonus: 0.2 },
   score: { perDish: 100, speedBonus: 100, waste: -20, comboStep: 0.25, comboMax: 3 },
 };

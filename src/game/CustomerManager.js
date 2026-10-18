@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { TUNING, LAYOUT } from '../config.js';
-import { rand, pick, Ease } from '../core/utils.js';
+import { rand, pick, rng, Ease } from '../core/utils.js';
 
 const V = (x, z) => new THREE.Vector3(x, 0, z);
 
@@ -36,6 +36,9 @@ export class CustomerManager {
     });
   }
 
+  /** Restrict which customers may visit (ids), or null for everyone. */
+  setPool(ids) { this.pool = ids ? new Set(ids) : null; }
+
   setActiveSeats(n) {
     // unlock order: back-left, front-right, back-right, front-left
     const order = [1, 3, 2, 0];
@@ -67,14 +70,15 @@ export class CustomerManager {
   }
 
   spawn(seat) {
-    if (!this.free.length) return;
+    const candidates = this.free.filter((ch) => !this.pool || this.pool.has(ch.def.id));
+    if (!candidates.length) return;
     const g = this.game;
-    const idx = Math.floor(Math.random() * this.free.length);
-    const char = this.free.splice(idx, 1)[0];
+    const char = candidates[Math.floor(rng() * candidates.length)];
+    this.free.splice(this.free.indexOf(char), 1);
     const unlocked = g.unlockedDishes();
     let menu = char.def.likes.filter((d) => unlocked.includes(d));
     if (!menu.length) menu = unlocked;
-    const two = Math.random() < g.twoDishChance() && menu.length > 1;
+    const two = rng() < g.twoDishChance() && menu.length > 1;
     const order = [pick(menu)];
     if (two) {
       const rest = menu.filter((d) => d !== order[0]);
@@ -86,6 +90,7 @@ export class CustomerManager {
       order: order.map((id) => ({ id, done: false })),
       patience, maxPatience: patience, timer: 0, dish: null, ui: null, urgentWarned: false,
     };
+    g.onCustomerSpawn(c); // quirks / VIP adjust patience
     seat.customer = c;
     this.customers.push(c);
     char.root.position.copy(this.door);
@@ -102,7 +107,7 @@ export class CustomerManager {
     c.state = 'waiting';
     c.char.bounce(1);
     c.ui = g.hud.createBubble(c, g.icons);
-    g.hud.emote(c.char.root, '❗', 1.3, 'auto', c.ui);
+    g.hud.emote(c.char.root, c.vip ? '👑' : c.quirk ? c.quirk.emote : '❗', 1.3, 'auto', c.ui);
     g.sfx.play('bell');
   }
 
@@ -180,9 +185,15 @@ export class CustomerManager {
       c.char.update(dt);
       switch (c.state) {
         case 'waiting': {
-          if (spawning) c.patience -= dt;
+          if (spawning) c.patience -= dt * g.patienceRate(); // frozen during Tea Time
           const frac = Math.max(0, c.patience / c.maxPatience);
           g.hud.updateBubble(c, frac);
+          if (c.hiddenBar && !c.revealed && frac < c.hiddenBar) {
+            // Mai finally shows how little patience she has left
+            c.revealed = true;
+            g.sfx.play('nope');
+            g.hud.emote(c.char.root, '⚠️', 1.3, 'auto', c.ui);
+          }
           if (frac < 0.3 && !c.urgentWarned) {
             c.urgentWarned = true;
             g.hud.emote(c.char.root, '💦', 1.3, 'auto', c.ui);

@@ -13,8 +13,12 @@ export class HUD {
     this.score = 0;
     this.el = {
       hud: $('hud'), score: $('score'), combo: $('combo'), comboBox: $('combo-box'), mood: $('mood-fill'),
-      level: $('level'), served: $('served'), toast: $('toast'), hint: $('hint'),
+      level: $('level'), levelLabel: $('level-label'), served: $('served'), servedBox: $('served-box'),
+      toast: $('toast'), hint: $('hint'),
+      tea: $('btn-tea'), rush: $('rush'), teaOverlay: $('tea-overlay'),
+      goal: $('goal'), goalText: $('goal-text'), goalTime: $('goal-time'), goalTimeText: $('goal-time-text'), goalRing: $('goal-ring'),
     };
+    this.toasts = [];
   }
 
   show(v) { this.el.hud.classList.toggle('hidden', !v); }
@@ -33,17 +37,85 @@ export class HUD {
     this.el.mood.classList.toggle('mid', frac < 0.5 && frac >= 0.25);
     this.el.mood.classList.toggle('low', frac < 0.25);
   }
-  setLevel(n) { this.el.level.textContent = n; }
+  setLevel(n, label = 'Level') { this.el.level.textContent = n; this.el.levelLabel.textContent = label; }
   setServed(n) { this.el.served.textContent = n; }
+  showServed(v) { this.el.servedBox.classList.toggle('hidden', !v); }
 
+  /** Campaign goal pill: plates served / goal, plus the shift clock (time left) when there is one. */
+  showGoal(v) { this.el.goal.classList.toggle('hidden', !v); }
+  setGoal(done, goal, timeLeft, timeTotal, timeText) {
+    this.el.goalText.textContent = `🍜 ${done}/${goal}`;
+    const hasClock = timeTotal > 0;
+    this.el.goalTime.classList.toggle('hidden', !hasClock);
+    if (hasClock) {
+      this.el.goalTimeText.textContent = timeText;
+      this.el.goalTime.classList.toggle('low', timeLeft <= 15);
+      this.el.goalRing.style.setProperty('--p', String(Math.max(0, timeLeft / timeTotal)));
+    }
+    this.el.goal.classList.toggle('near', goal - done <= 1);
+  }
+  bumpGoal() {
+    const g = this.el.goal;
+    g.classList.remove('bump');
+    void g.offsetWidth;
+    g.classList.add('bump');
+  }
+
+  /** Iroh's Tea Time button: hidden on days without it, dim until a charge is earned. */
+  setTea({ visible = false, charges = 0, active = false } = {}) {
+    const b = this.el.tea;
+    b.classList.toggle('hidden', !visible);
+    b.classList.toggle('ready', charges > 0 && !active);
+    b.classList.toggle('active', active);
+    b.disabled = !(charges > 0) || active;
+  }
+  setTeaOverlay(on) { this.el.teaOverlay.classList.toggle('on', on); }
+  setRush(on) { this.el.rush.classList.toggle('hidden', !on); }
+
+  /** Queued toasts: a new message waits for the current one instead of overwriting it. */
   toast(msg, ms = 1600) {
+    if (this.toasts.length >= 3) this.toasts.shift();
+    this.toasts.push({ msg, ms });
+    if (!this._toastBusy) this._nextToast();
+  }
+  _nextToast() {
+    const next = this.toasts.shift();
     const t = this.el.toast;
-    t.textContent = msg;
+    if (!next) { this._toastBusy = false; return; }
+    this._toastBusy = true;
+    t.textContent = next.msg;
     t.classList.remove('show');
     void t.offsetWidth;
     t.classList.add('show');
     clearTimeout(this._toastT);
-    this._toastT = setTimeout(() => t.classList.remove('show'), ms);
+    this._toastT = setTimeout(() => { t.classList.remove('show'); setTimeout(() => this._nextToast(), 180); }, next.ms);
+  }
+  clearToasts() {
+    this.toasts.length = 0;
+    clearTimeout(this._toastT);
+    this._toastBusy = false;
+    this.el.toast.classList.remove('show');
+  }
+
+  /** Ghost hand pointing at a world position (Day 1 teaching); pass null to hide. */
+  guide(pos) {
+    if (!pos) { if (this._guide) { this._remove(this._guide); this._guide = null; } return; }
+    if (!this._guide) {
+      const h = document.createElement('div');
+      h.className = 'guide-hand';
+      h.textContent = '👆';
+      this._guide = this._anchor(null, 0, h, Infinity, pos.clone());
+    } else this._guide.pos.copy(pos);
+  }
+
+  /** Briefly highlight the bubble of the guest who is going to take a dish. */
+  flashBubble(c) {
+    if (!c || !c.ui) return;
+    c.ui.classList.remove('target');
+    void c.ui.offsetWidth;
+    c.ui.classList.add('target');
+    clearTimeout(c.ui._flashT);
+    c.ui._flashT = setTimeout(() => c.ui && c.ui.classList.remove('target'), 700);
   }
 
   // ---- anchored elements -------------------------------------------------
@@ -87,6 +159,17 @@ export class HUD {
     const fill = document.createElement('div');
     fill.className = 'fill';
     bar.appendChild(fill);
+    if (c.vip) {
+      b.classList.add('vip');
+      const crown = document.createElement('div');
+      crown.className = 'crown';
+      crown.textContent = '👑';
+      b.appendChild(crown);
+    }
+    if (c.hiddenBar) {
+      bar.classList.add('hidden-bar');
+      bar.dataset.q = '?';
+    }
     b.append(who, dishes, bar);
     b._fill = fill;
     b._dishes = dishes;
@@ -102,9 +185,12 @@ export class HUD {
   updateBubble(c, frac) {
     const b = c.ui;
     if (!b) return;
-    b._fill.style.width = `${frac * 100}%`;
-    b._fill.style.background = `hsl(${Math.round(frac * 110)}, 65%, 48%)`;
-    b.classList.toggle('urgent', frac < 0.25);
+    // Mai's bar stays a grey "?" until her patience drops below the reveal point
+    const hidden = c.hiddenBar && frac >= c.hiddenBar;
+    b._fill.parentElement.classList.toggle('hidden-bar', !!hidden);
+    b._fill.style.width = hidden ? '100%' : `${frac * 100}%`;
+    b._fill.style.background = hidden ? '#b9ad96' : `hsl(${Math.round(frac * 110)}, 65%, 48%)`;
+    b.classList.toggle('urgent', !hidden && frac < 0.25);
   }
 
   removeBubble(b) {
@@ -137,6 +223,7 @@ export class HUD {
 
   clearWorld() {
     for (const r of this.anchors.slice()) this._remove(r);
+    this._guide = null;
   }
 
   _place(rec) {

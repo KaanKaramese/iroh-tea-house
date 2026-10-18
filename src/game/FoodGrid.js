@@ -4,6 +4,29 @@ import { damp } from '../core/utils.js';
 
 const DISH_SCALE = 1.55;
 
+let spillTex = null;
+/** Small "💧1" sprite riding on spill dishes (grid and belt). */
+function spillBadge() {
+  if (!spillTex) {
+    const c = document.createElement('canvas');
+    c.width = 96; c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(30, 90, 160, 0.92)';
+    g.beginPath(); g.roundRect(4, 6, 88, 52, 24); g.fill();
+    g.fillStyle = '#fff';
+    g.font = 'bold 34px Georgia, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('💧1', 48, 34);
+    spillTex = new THREE.CanvasTexture(c);
+    spillTex.colorSpace = THREE.SRGBColorSpace;
+  }
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: spillTex, depthTest: false, transparent: true }));
+  s.scale.set(0.3, 0.2, 1);
+  s.position.set(0.12, 0.34, 0);
+  s.renderOrder = 5;
+  return s;
+}
+
 /**
  * cols × rows grid of dishes in front of the table. Only row 0 (closest to the
  * table) can be picked; taking a dish shifts its column up and spawns a new dish at the bottom.
@@ -96,6 +119,8 @@ export class FoodGrid {
   _makeDish(id) {
     const obj = cloneTemplate(this.templates[id], 0.001);
     obj.rotation.y = (Math.random() - 0.5) * 0.6;
+    obj.userData.dish = true; // lets a reset find dishes that left the grid
+    if (this.spill && this.spill.has(id)) obj.add(spillBadge()); // 💧1: wasted after only 1 lap
     this.group.add(obj);
     return obj;
   }
